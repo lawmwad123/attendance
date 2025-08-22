@@ -1,0 +1,189 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Full-stack with **FastAPI (backend)** + **React.js (web dashboard)** + **React Native (mobile app for parents, security, teachers)**. Let’s lay out **everything clearly**, so you have a **blueprint** for the entire system.
+
+---
+
+# 📚 Full System Design — *Attendance (working name)*
+
+---
+
+## 1️⃣ Backend (FastAPI)
+
+### 🔹 Core Features
+
+* **Multi-tenant SaaS** (each school gets a subdomain, e.g. `school1.attendly.com`).
+* **Authentication** (JWT + role-based access: Admin, Teacher, Parent, Security).
+* **Attendance Management** (biometric, RFID, manual).
+* **Gate Passouts** (requests, approvals, denials, notifications).
+* **Notifications** (WebSocket + push notifications).
+* **Reports & Analytics** (attendance trends, punctuality, pass history).
+
+### 🔹 API Endpoints (first iteration)
+
+* **Auth**
+
+  * `POST /auth/signup` (Admin creates school account)
+  * `POST /auth/login` (User login, returns JWT)
+* **Schools**
+
+  * `POST /schools/` (register new school)
+  * `GET /schools/{id}` (get school details)
+* **Users**
+
+  * `POST /users/` (create teacher/parent/security user under a school)
+  * `GET /users/{id}` (fetch user profile)
+* **Students**
+
+  * `POST /students/` (add student to school)
+  * `GET /students/{id}` (student details + attendance history)
+* **Attendance**
+
+  * `POST /attendance/` (mark attendance → `{student_id, method, timestamp}`)
+  * `GET /attendance/{student_id}` (attendance history)
+* **Gate Pass**
+
+  * `POST /gate-pass/` (request pass → pending approval)
+  * `PUT /gate-pass/{id}/approve` (admin/parent approves)
+  * `PUT /gate-pass/{id}/deny`
+  * `GET /gate-pass/{id}`
+
+### 🔹 Tech Stack
+
+* **FastAPI** (core API)
+* **PostgreSQL** (multi-tenant DB, likely row-level isolation with `school_id`)
+* **SQLAlchemy + Alembic** (ORM & migrations)
+* **Redis** (notifications & caching)
+* **Celery** (background jobs e.g. sending parent alerts)
+* **Docker** (containerization)
+
+---
+
+## 2️⃣ Web Frontend (React.js)
+
+### 🔹 Target Users
+
+* **Admins & Teachers** (manage schools, classes, students, attendance, reports).
+* **Security Officers** (track gate passouts, approve exits).
+
+### 🔹 Key Pages
+
+* **Login / Signup** (multi-tenant login via subdomain).
+* **Dashboard**
+
+  * Overview (who’s in school, who’s out).
+  * Quick actions: Mark attendance, approve gate passes.
+* **Students**
+
+  * Add/edit student profiles.
+  * View individual attendance records.
+* **Attendance**
+
+  * Class-level attendance list.
+  * Export attendance reports.
+* **Gate Pass**
+
+  * Pending requests, approvals, denials.
+  * History of exits.
+* **Analytics**
+
+  * Daily/weekly/monthly attendance reports.
+  * Top latecomers, absentees.
+
+### 🔹 Tech Stack
+
+* **React.js + Vite/Next.js** (fast dev & SSR if needed).
+* **ShadCN UI + TailwindCSS** (modern, clean UI).
+* **Redux Toolkit / TanStack Query** (state + API calls).
+* **Axios** (HTTP client).
+
+---
+
+## 3️⃣ Mobile App (React Native)
+
+### 🔹 Target Users
+
+* **Parents** (notifications, pass approvals, attendance history).
+* **Teachers (lightweight)** (mark attendance from class).
+* **Security Guards** (scan cards/biometrics, approve exits).
+
+### 🔹 Key Screens
+
+* **Login / OTP** (JWT authentication).
+* **Home Dashboard** (summary for parent/teacher/security).
+* **Attendance**
+
+  * Parents: View child’s attendance.
+  * Teachers: Mark daily attendance (simple checkbox list).
+* **Gate Pass**
+
+  * Parents: Approve/deny exit requests.
+  * Security: Scan student’s card/biometric and verify approval.
+* **Notifications**
+
+  * Real-time push (child entered school, child exited, gate pass request).
+
+### 🔹 Tech Stack
+
+* **React Native (Expo)** (cross-platform iOS + Android).
+* **React Navigation** (navigation).
+* **Redux Toolkit / TanStack Query** (API state).
+* **Expo Notifications / Firebase Cloud Messaging (FCM)** (push notifications).
+* **Camera / NFC libraries** (for scanning QR codes, RFID integration).
+
+---
+
+## 4️⃣ Hardware Integration
+
+* **Biometric Scanners** (fingerprint/face devices connected to FastAPI via local API or MQTT).
+* **RFID/NFC Readers** (read student cards → send data to FastAPI).
+* **QR Codes** (backup option for parents & students).
+
+---
+
+## 5️⃣ Multi-Tenant Setup
+
+* **Domain Strategy:**
+
+  * `school1.attendly.com`, `school2.attendly.com`.
+* **DB Strategy:**
+
+  * **Row-level multi-tenancy** (all schools in one DB, every record tied to `school_id`).
+  * Middleware extracts tenant info from subdomain and filters queries.
+
+---
+
+## 6️⃣ Notifications Flow
+
+* **Child enters school** → Biometric → API logs attendance → **Parent notified via push**.
+* **Gate pass requested** → API creates pass record → **Parent/Admin notified** → Approves/denies → **Security notified in real-time**.
+
+---
+
+## 7️⃣ Deployment
+
+* **Backend:** Docker + FastAPI + Gunicorn/Uvicorn → deployed on **AWS/GCP/DigitalOcean**.
+* **Database:** PostgreSQL (cloud-managed like Supabase, Neon, or RDS).
+* **Frontend:** React.js deployed on **Vercel/Netlify**.
+* **Mobile App:** React Native → **Play Store & App Store**.
+
+---
+
+## 8️⃣ Future Enhancements
+
+* **Facial Recognition via CCTV**.
+* **Bus Transport Tracking**.
+* **Fee Payments with same RFID card**.
+* **AI Attendance Insights** (predict absenteeism, behavior patterns).
+
+---
+
+✅ With this blueprint, you now have:
+
+* **Backend (FastAPI)** → multi-tenant API with attendance, gate passes, biometrics.
+* **Web (React.js)** → Admin/Teacher dashboards.
+* **Mobile (React Native)** → Parent + Security + Teacher apps.
+* **Hardware Integration** → Biometric + RFID + QR support.
