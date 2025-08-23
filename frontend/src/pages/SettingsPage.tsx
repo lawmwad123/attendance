@@ -201,7 +201,7 @@ const SettingsPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-secondary-900">Settings</h1>
         <p className="text-secondary-600">Configure school and system settings</p>
       </div>
-
+      
       {/* Save Status */}
       {saveStatus === 'success' && (
         <div className="card p-4 bg-success-50 border-success-200">
@@ -1158,4 +1158,4 @@ const DevicesSettingsTab: React.FC<{
   );
 };
 
-export default SettingsPage;
+export default SettingsPage; 

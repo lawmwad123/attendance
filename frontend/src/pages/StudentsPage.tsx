@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { 
@@ -80,6 +80,13 @@ const StudentsPage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  // Cleanup effect to restore body scroll when component unmounts
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   // Fetch students from backend
   const { data: students, isLoading, error } = useQuery<Student[]>({
     queryKey: ['students', statusFilter],
@@ -153,6 +160,7 @@ const StudentsPage: React.FC = () => {
     setPanelMode('add');
     resetForm();
     setShowSlidePanel(true);
+    handleOpenPanel();
   };
 
   const handleEditStudent = (student: Student) => {
@@ -174,12 +182,14 @@ const StudentsPage: React.FC = () => {
     });
     setPanelMode('edit');
     setShowSlidePanel(true);
+    handleOpenPanel();
   };
 
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
     setPanelMode('view');
     setShowSlidePanel(true);
+    handleOpenPanel();
   };
 
   const handleDeleteStudent = (student: Student) => {
@@ -201,6 +211,13 @@ const StudentsPage: React.FC = () => {
     setShowSlidePanel(false);
     setSelectedStudent(null);
     resetForm();
+    // Re-enable body scroll when panel closes
+    document.body.style.overflow = 'auto';
+  };
+
+  const handleOpenPanel = () => {
+    // Disable body scroll when panel opens
+    document.body.style.overflow = 'hidden';
   };
 
   const filteredStudents = students?.filter(student => {
@@ -230,13 +247,13 @@ const StudentsPage: React.FC = () => {
   };
 
   if (error) {
-    return (
+  return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center text-red-600">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              <span>Error loading students data: {(error as Error).message}</span>
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span>Error loading students data: {(error as Error).message}</span>
             </div>
           </div>
         </div>
@@ -254,19 +271,19 @@ const StudentsPage: React.FC = () => {
               <div className="bg-indigo-100 p-3 rounded-lg">
                 <GraduationCap className="h-8 w-8 text-indigo-600" />
               </div>
-              <div>
+        <div>
                 <h1 className="text-2xl font-bold text-gray-900">Student Management</h1>
                 <p className="text-gray-600">Manage student profiles and information</p>
               </div>
-            </div>
+        </div>
             
-            <button
-              onClick={handleAddStudent}
+        <button
+          onClick={handleAddStudent}
               className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
-            >
+        >
               <Plus className="h-5 w-5 mr-2" />
-              Add Student
-            </button>
+          Add Student
+        </button>
           </div>
         </div>
       </div>
@@ -328,96 +345,96 @@ const StudentsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+      </div>
 
-        {/* Filters */}
+      {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
+          <div className="flex-1">
+            <div className="relative">
                 <Search className="h-5 w-5 absolute left-3 top-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search students by name, ID, or email..."
+              <input
+                type="text"
+                placeholder="Search students by name, ID, or email..."
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-400" />
-              <select
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="graduated">Graduated</option>
-                <option value="transferred">Transferred</option>
-              </select>
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
+          <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-400" />
+            <select
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="graduated">Graduated</option>
+              <option value="transferred">Transferred</option>
+            </select>
+          </div>
         </div>
+      </div>
 
         {/* Students Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Students ({filteredStudents.length})
-            </h2>
-          </div>
-          
-          {isLoading ? (
+            Students ({filteredStudents.length})
+          </h2>
+        </div>
+        
+        {isLoading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading students...</p>
-            </div>
-          ) : filteredStudents.length === 0 ? (
+          </div>
+        ) : filteredStudents.length === 0 ? (
             <div className="p-12 text-center">
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
               <p className="text-gray-600 mb-6">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'Get started by adding your first student.'
-                }
-              </p>
-              {!searchTerm && statusFilter === 'all' && (
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Get started by adding your first student.'
+              }
+            </p>
+            {!searchTerm && statusFilter === 'all' && (
                 <button onClick={handleAddStudent} className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Student
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Student
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
                 <thead className="bg-gray-50">
-                  <tr>
+                <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
+                    Student
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Class
-                    </th>
+                    Class
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Guardian
-                    </th>
+                    Guardian
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
+                    Status
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((student) => (
+                {filteredStudents.map((student) => (
                     <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-12 w-12">
                             <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -426,72 +443,72 @@ const StudentsPage: React.FC = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {student.full_name}
-                            </div>
+                          {student.full_name}
+                        </div>
                             <div className="text-sm text-gray-500">
-                              ID: {student.student_id}
-                            </div>
-                            {student.email && (
+                          ID: {student.student_id}
+                        </div>
+                        {student.email && (
                               <div className="text-sm text-gray-500">
-                                {student.email}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {student.class_name || 'N/A'}
-                          {student.section && ` - ${student.section}`}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {student.guardian_name || 'N/A'}
-                        </div>
-                        {student.guardian_phone && (
-                          <div className="text-sm text-gray-500">
-                            {student.guardian_phone}
+                            {student.email}
                           </div>
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(student.status)}`}>
-                          {student.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewStudent(student)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditStudent(student)}
-                            className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
-                            title="Edit Student"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStudent(student)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Delete Student"
-                            disabled={deleteStudentMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                        {student.class_name || 'N/A'}
+                        {student.section && ` - ${student.section}`}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                        {student.guardian_name || 'N/A'}
+                      </div>
+                      {student.guardian_phone && (
+                          <div className="text-sm text-gray-500">
+                          {student.guardian_phone}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(student.status)}`}>
+                        {student.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleViewStudent(student)}
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditStudent(student)}
+                            className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
+                          title="Edit Student"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete Student"
+                          disabled={deleteStudentMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         </div>
       </div>
 
@@ -505,18 +522,18 @@ const StudentsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-white">
                 {getPanelTitle()}
-              </h2>
-              <button
+                </h2>
+                <button
                 onClick={handleClosePanel}
                 className="text-indigo-200 hover:text-white transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Panel Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {panelMode === 'view' && selectedStudent ? (
               <div className="p-6 space-y-8">
                 {/* Personal Information */}
@@ -619,82 +636,82 @@ const StudentsPage: React.FC = () => {
               </div>
             ) : (
               // Form for Add/Edit
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 {/* Personal Information Section */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Student ID *</label>
-                      <input
-                        type="text"
-                        required
+                  <input
+                    type="text"
+                    required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.student_id}
-                        onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-                        placeholder="STU001"
-                      />
-                    </div>
-                    
+                    value={formData.student_id}
+                    onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                    placeholder="STU001"
+                  />
+                </div>
+                
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
+                <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                        <input
-                          type="text"
-                          required
+                  <input
+                    type="text"
+                    required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          value={formData.first_name}
-                          onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                          placeholder="John"
-                        />
-                      </div>
-                      
-                      <div>
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    placeholder="John"
+                  />
+                </div>
+                
+                <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                        <input
-                          type="text"
-                          required
+                  <input
+                    type="text"
+                    required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          value={formData.last_name}
-                          onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                          placeholder="Doe"
-                        />
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    placeholder="Doe"
+                  />
                       </div>
-                    </div>
-                    
-                    <div>
+                </div>
+                
+                <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input
-                        type="email"
+                  <input
+                    type="email"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="student@email.com"
-                      />
-                    </div>
-                    
-                    <div>
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="student@email.com"
+                  />
+                </div>
+                
+                <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <input
-                        type="tel"
+                  <input
+                    type="tel"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+1-555-0123"
-                      />
-                    </div>
-                    
-                    <div>
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+1-555-0123"
+                  />
+                </div>
+                
+                <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                      <input
-                        type="date"
+                  <input
+                    type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.date_of_birth}
-                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      />
-                    </div>
-
-                    <div>
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  />
+                </div>
+                
+                <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                       <textarea
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -714,80 +731,80 @@ const StudentsPage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                        <input
-                          type="text"
+                  <input
+                    type="text"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          value={formData.class_name}
-                          onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                          placeholder="Grade 8"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                        <input
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          value={formData.section}
-                          onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                          placeholder="A"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Admission Date</label>
-                      <input
-                        type="date"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.admission_date}
-                        onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                    value={formData.class_name}
+                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                    placeholder="Grade 8"
+                  />
                 </div>
+                
+                <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                  <input
+                    type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={formData.section}
+                    onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                    placeholder="A"
+                  />
+                      </div>
+                </div>
+                
+                <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Admission Date</label>
+                  <input
+                    type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={formData.admission_date}
+                    onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              </div>
 
                 {/* Guardian Information Section */}
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Guardian Information</h3>
                   <div className="space-y-4">
-                    <div>
+                  <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Name</label>
-                      <input
-                        type="text"
+                    <input
+                      type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.guardian_name}
-                        onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
-                        placeholder="Jane Doe"
-                      />
-                    </div>
-                    
-                    <div>
+                      value={formData.guardian_name}
+                      onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  
+                  <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Phone</label>
-                      <input
-                        type="tel"
+                    <input
+                      type="tel"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.guardian_phone}
-                        onChange={(e) => setFormData({ ...formData, guardian_phone: e.target.value })}
-                        placeholder="+1-555-0124"
-                      />
-                    </div>
-                    
+                      value={formData.guardian_phone}
+                      onChange={(e) => setFormData({ ...formData, guardian_phone: e.target.value })}
+                      placeholder="+1-555-0124"
+                    />
+                  </div>
+                  
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Email</label>
-                      <input
-                        type="email"
+                    <input
+                      type="email"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        value={formData.guardian_email}
-                        onChange={(e) => setFormData({ ...formData, guardian_email: e.target.value })}
-                        placeholder="guardian@email.com"
-                      />
-                    </div>
+                      value={formData.guardian_email}
+                      onChange={(e) => setFormData({ ...formData, guardian_email: e.target.value })}
+                      placeholder="guardian@email.com"
+                    />
                   </div>
+                </div>
                 </div>
               </form>
             )}
-          </div>
+              </div>
 
           {/* Panel Footer */}
           {panelMode === 'view' && selectedStudent ? (
@@ -830,10 +847,10 @@ const StudentsPage: React.FC = () => {
                   )}
                 </button>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
       {/* Backdrop */}
       {showSlidePanel && (
