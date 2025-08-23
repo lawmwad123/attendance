@@ -86,6 +86,11 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       localStorage.setItem('user', JSON.stringify(action.payload));
     },
+    updateUser: (state, action: PayloadAction<User>) => {
+      console.log('Updating user in auth slice:', action.payload);
+      state.user = action.payload;
+      localStorage.setItem('user', JSON.stringify(action.payload));
+    },
     clearAuth: (state) => {
       state.user = null;
       state.token = null;
@@ -97,13 +102,17 @@ const authSlice = createSlice({
       const token = localStorage.getItem('auth_token');
       const userStr = localStorage.getItem('user');
       
+      console.log('Initializing auth:', { token: !!token, userStr: !!userStr });
+      
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
+          console.log('Parsed user from localStorage:', user);
           state.token = token;
           state.user = user;
           state.isAuthenticated = true;
         } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
           // Clear invalid data
           removeAuthToken();
           state.isAuthenticated = false;
@@ -182,5 +191,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setUser, clearAuth, initializeAuth } = authSlice.actions;
+export const { clearError, setUser, updateUser, clearAuth, initializeAuth } = authSlice.actions;
 export default authSlice.reducer; 

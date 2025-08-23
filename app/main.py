@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import re
 
@@ -35,6 +36,9 @@ app.add_middleware(
 
 # Add tenant middleware for multi-tenancy
 app.add_middleware(TenantMiddleware)
+
+# Mount static files for serving uploaded images
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)

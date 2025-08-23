@@ -227,6 +227,27 @@ class ApiClient {
     return response.data;
   }
 
+  async uploadProfileImage(file: File): Promise<{ message: string; image_path: string; image_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await apiClient.post('/auth/upload-profile-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async deleteProfileImage(): Promise<{ message: string }> {
+    const response = await apiClient.delete('/auth/delete-profile-image');
+    return response.data;
+  }
+
+  getProfileImageUrl(userId: number): string {
+    return `${API_BASE_URL}/uploads/profile_images/profile_${userId}_${userId}_${Date.now()}.jpg`;
+  }
+
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     await apiClient.post('/auth/change-password', {
       current_password: currentPassword,

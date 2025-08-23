@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { updateUserProfile } from '../store/slices/userSlice';
+import { updateUser } from '../store/slices/authSlice';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import Modal from '../components/ui/Modal';
+import ProfileImageUpload from '../components/ui/ProfileImageUpload';
 import { 
   User,
   Mail,
@@ -76,6 +77,7 @@ const ProfilePage: React.FC = () => {
 
   // Initialize form with user data
   useEffect(() => {
+    console.log('ProfilePage: User data changed:', user);
     if (user) {
       setProfileForm({
         first_name: user.first_name || '',
@@ -94,7 +96,7 @@ const ProfilePage: React.FC = () => {
   const updateProfileMutation = useMutation({
     mutationFn: (profileData: Partial<UserType>) => api.updateProfile(profileData),
     onSuccess: (updatedUser) => {
-      dispatch(updateUserProfile(updatedUser));
+      dispatch(updateUser(updatedUser));
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       setIsEditing(false);
       toast.success('Profile updated successfully!');
@@ -328,10 +330,7 @@ const ProfilePage: React.FC = () => {
         <div className="lg:col-span-1">
           <div className="card p-6">
             <div className="text-center">
-              <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <User className="h-12 w-12 text-indigo-600" />
-              </div>
-              <h2 className="text-xl font-semibold text-secondary-900 mb-2">
+              <h2 className="text-xl font-semibold text-secondary-900 mb-4">
                 {user.full_name}
               </h2>
               <div className="flex items-center justify-center mb-4">
@@ -345,9 +344,20 @@ const ProfilePage: React.FC = () => {
                   {user.status}
                 </span>
               </div>
-              <div className="text-sm text-secondary-600">
+              <div className="text-sm text-secondary-600 mb-6">
                 <p>Member since {new Date(user.created_at).toLocaleDateString()}</p>
               </div>
+              
+              {/* Profile Image Upload */}
+              <ProfileImageUpload
+                currentImageUrl={user.profile_image}
+                userId={user.id}
+                userName={user.full_name}
+                onImageUpdate={(imageUrl) => {
+                  // Update local state if needed
+                  console.log('Profile image updated:', imageUrl);
+                }}
+              />
             </div>
           </div>
         </div>

@@ -54,6 +54,9 @@ class Student(TenantBaseModel):
     rfid_card_id = Column(String(100), nullable=True, unique=True, index=True)
     biometric_id = Column(String(100), nullable=True, unique=True, index=True)
     
+    # Profile Image
+    profile_image = Column(String(255), nullable=True)  # Path to profile image
+    
     # Parent/Guardian Information
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     guardian_name = Column(String(200), nullable=True)

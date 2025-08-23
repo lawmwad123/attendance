@@ -14,6 +14,7 @@ export interface User {
   hire_date?: string;
   is_active: boolean;
   is_verified: boolean;
+  profile_image?: string;
   created_at: string;
   school_id: number;
 }

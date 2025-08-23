@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.security import HTTPBearer
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import timedelta
@@ -7,6 +8,7 @@ from datetime import timedelta
 from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token, get_password_hash
+from app.core.file_upload import file_upload_service
 from app.models.user import User
 from app.schemas.user import UserLogin, Token, UserProfile, PasswordChange, UserUpdate
 from app.middleware.tenant import get_current_school_id
@@ -85,6 +87,7 @@ async def login(
         hire_date=user.hire_date,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        profile_image=user.profile_image,
         created_at=user.created_at
     )
     
@@ -118,6 +121,7 @@ async def get_current_user_profile(
         hire_date=current_user.hire_date,
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
+        profile_image=current_user.profile_image,
         created_at=current_user.created_at
     )
 
@@ -242,6 +246,7 @@ async def update_profile(
             hire_date=current_user.hire_date,
             is_active=current_user.is_active,
             is_verified=current_user.is_verified,
+            profile_image=current_user.profile_image,
             created_at=current_user.created_at
         )
         
@@ -278,3 +283,135 @@ async def verify_token_endpoint(
         "role": current_user.role,
         "school_id": current_user.school_id
     }
+
+
+@router.post("/upload-profile-image")
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload profile image for current user.
+    """
+    try:
+        # Process and save the image
+        image_path = await file_upload_service.process_and_save_profile_image(
+            file=file,
+            user_id=current_user.id,
+            school_id=current_user.school_id
+        )
+        
+        print(f"DEBUG: Image saved at path: {image_path}")
+        
+        # Delete old profile image if exists
+        if current_user.profile_image:
+            await file_upload_service.delete_profile_image(current_user.profile_image)
+        
+        # Update user profile with new image path
+        current_user.profile_image = image_path
+        
+        await db.commit()
+        await db.refresh(current_user)
+        
+        print(f"DEBUG: User profile_image after update: {current_user.profile_image}")
+        
+        return {
+            "message": "Profile image uploaded successfully",
+            "image_path": image_path,
+            "image_url": file_upload_service.get_image_url(image_path)
+        }
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload profile image: {str(e)}"
+        )
+
+
+@router.delete("/delete-profile-image")
+async def delete_profile_image(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete profile image for current user.
+    """
+    try:
+        if not current_user.profile_image:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No profile image found"
+            )
+        
+        # Delete the file
+        deleted = await file_upload_service.delete_profile_image(current_user.profile_image)
+        
+        if deleted:
+            # Update user profile
+            current_user.profile_image = None
+            await db.commit()
+            await db.refresh(current_user)
+            
+            return {"message": "Profile image deleted successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete profile image file"
+            )
+            
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete profile image: {str(e)}"
+        )
+
+
+@router.get("/profile-image/{user_id}")
+async def get_profile_image(
+    user_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get profile image for a user.
+    """
+    # Get tenant filter
+    school_id = get_current_school_id(request)
+    if not school_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="School context required"
+        )
+    
+    # Get user
+    stmt = select(User).where(
+        User.id == user_id,
+        User.school_id == school_id
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if not user.profile_image:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No profile image found"
+        )
+    
+    # Serve the image
+    response = await file_upload_service.serve_image(user.profile_image)
+    if response:
+        return response
+    
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Profile image file not found"
+    )

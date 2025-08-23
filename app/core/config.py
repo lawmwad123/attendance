@@ -54,6 +54,15 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 24
     
+    # File Upload Settings
+    UPLOAD_DIR: str = "uploads"
+    PROFILE_IMAGES_DIR: str = "profile_images"
+    MAX_FILE_SIZE: int = 5 * 1024 * 1024  # 5MB
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    IMAGE_MAX_WIDTH: int = 800
+    IMAGE_MAX_HEIGHT: int = 800
+    IMAGE_QUALITY: int = 85
+    
     @property
     def FINAL_DATABASE_URL(self) -> str:
         # Use DATABASE_URL if provided, otherwise construct from components

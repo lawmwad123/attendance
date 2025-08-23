@@ -18,6 +18,7 @@ class StudentBase(BaseModel):
     class_name: Optional[str] = Field(None, max_length=50)
     section: Optional[str] = Field(None, max_length=10)
     admission_date: Optional[date] = None
+    profile_image: Optional[str] = None
 
 
 class StudentCreate(StudentBase):
@@ -40,6 +41,7 @@ class StudentUpdate(BaseModel):
     class_name: Optional[str] = Field(None, max_length=50)
     section: Optional[str] = Field(None, max_length=10)
     admission_date: Optional[date] = None
+    profile_image: Optional[str] = None
 
 
 class Student(StudentBase):

@@ -149,8 +149,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           {/* User section */}
           <div className="p-4 border-t border-secondary-200">
             <div className="flex items-center space-x-3 mb-3">
-              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-primary-700">
+              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+                {user?.profile_image ? (
+                  <img
+                    src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${user.profile_image}`}
+                    alt={user.full_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <span className={`text-sm font-medium text-primary-700 ${user?.profile_image ? 'hidden' : ''}`}>
                   {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
                 </span>
               </div>
@@ -227,8 +240,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     {user?.role}
                   </p>
                 </div>
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary-700">
+                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+                  {user?.profile_image ? (
+                    <img
+                      src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${user.profile_image}`}
+                      alt={user.full_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to initials if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <span className={`text-sm font-medium text-primary-700 ${user?.profile_image ? 'hidden' : ''}`}>
                     {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
                   </span>
                 </div>

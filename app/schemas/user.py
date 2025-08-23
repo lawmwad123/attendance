@@ -16,6 +16,7 @@ class UserBase(BaseModel):
     employee_id: Optional[str] = None
     department: Optional[str] = None
     hire_date: Optional[str] = None
+    profile_image: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -43,6 +44,7 @@ class UserUpdate(BaseModel):
     hire_date: Optional[str] = None
     is_active: Optional[bool] = None
     status: Optional[UserStatus] = None
+    profile_image: Optional[str] = None
 
 
 class UserInDB(UserBase):
@@ -89,6 +91,7 @@ class UserProfile(BaseModel):
     hire_date: Optional[str]
     is_active: bool
     is_verified: bool
+    profile_image: Optional[str]
     created_at: datetime
     
     class Config:

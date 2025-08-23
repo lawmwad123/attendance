@@ -49,6 +49,9 @@ class User(TenantBaseModel):
     department = Column(String(100), nullable=True)  # For teachers/staff
     hire_date = Column(String(10), nullable=True)  # YYYY-MM-DD format
     
+    # Profile Image
+    profile_image = Column(String(255), nullable=True)  # Path to profile image
+    
     # Relationships
     school = relationship("School", back_populates="users", foreign_keys="User.school_id")
     
