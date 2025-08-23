@@ -242,14 +242,14 @@ const AttendancePage: React.FC = () => {
           {isToday && (
             <button
               onClick={() => setShowMarkAttendance(true)}
-              className="btn-primary flex items-center"
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
             >
-              <UserCheck className="h-4 w-4 mr-2" />
+              <UserCheck className="h-5 w-5 mr-2" />
               Mark Attendance
             </button>
           )}
-          <button className="btn-secondary flex items-center">
-            <Download className="h-4 w-4 mr-2" />
+          <button className="inline-flex items-center px-6 py-3 bg-white text-gray-700 font-medium rounded-lg shadow-sm border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+            <Download className="h-5 w-5 mr-2" />
             Export
           </button>
         </div>

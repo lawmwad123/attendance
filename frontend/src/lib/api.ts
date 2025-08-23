@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import type { LoginRequest, LoginResponse, User, School, SchoolStats, UserFilters, CreateUserForm, UpdateUserForm } from '../types';
+import type { LoginRequest, LoginResponse, User, School, SchoolStats } from '../types';
 
 // Settings types
 interface SchoolSettings {
@@ -219,6 +219,11 @@ class ApiClient {
 
   async getCurrentUser(): Promise<User> {
     const response = await apiClient.get<User>('/auth/me');
+    return response.data;
+  }
+
+  async updateProfile(profileData: Partial<User>): Promise<User> {
+    const response = await apiClient.put<User>('/auth/profile', profileData);
     return response.data;
   }
 

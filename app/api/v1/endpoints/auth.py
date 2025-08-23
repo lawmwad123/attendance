@@ -8,7 +8,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token, get_password_hash
 from app.models.user import User
-from app.schemas.user import UserLogin, Token, UserProfile, PasswordChange
+from app.schemas.user import UserLogin, Token, UserProfile, PasswordChange, UserUpdate
 from app.middleware.tenant import get_current_school_id
 
 router = APIRouter()
@@ -150,6 +150,106 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to change password"
+        )
+
+
+@router.put("/profile", response_model=UserProfile)
+async def update_profile(
+    profile_update: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update current user's profile information.
+    Users can update their own personal information but not role or status.
+    """
+    # Prevent updating sensitive fields
+    if profile_update.role is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update role through profile endpoint"
+        )
+    
+    if profile_update.status is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update status through profile endpoint"
+        )
+    
+    if profile_update.is_active is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update active status through profile endpoint"
+        )
+    
+    # Check email uniqueness if being updated
+    if profile_update.email and profile_update.email.lower() != current_user.email:
+        stmt = select(User).where(
+            User.email == profile_update.email.lower(),
+            User.school_id == current_user.school_id,
+            User.id != current_user.id
+        )
+        result = await db.execute(stmt)
+        existing_user = result.scalar_one_or_none()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
+    
+    # Check employee_id uniqueness if being updated
+    if profile_update.employee_id and profile_update.employee_id != current_user.employee_id:
+        stmt = select(User).where(
+            User.employee_id == profile_update.employee_id,
+            User.school_id == current_user.school_id,
+            User.id != current_user.id
+        )
+        result = await db.execute(stmt)
+        existing_employee = result.scalar_one_or_none()
+        
+        if existing_employee:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this employee ID already exists"
+            )
+    
+    try:
+        # Update user fields
+        update_data = profile_update.dict(exclude_unset=True)
+        
+        for field, value in update_data.items():
+            if field == "email" and value:
+                setattr(current_user, field, value.lower())
+            elif hasattr(current_user, field):
+                setattr(current_user, field, value)
+        
+        await db.commit()
+        await db.refresh(current_user)
+        
+        return UserProfile(
+            id=current_user.id,
+            email=current_user.email,
+            username=current_user.username,
+            first_name=current_user.first_name,
+            last_name=current_user.last_name,
+            full_name=current_user.full_name,
+            phone=current_user.phone,
+            role=current_user.role,
+            status=current_user.status,
+            employee_id=current_user.employee_id,
+            department=current_user.department,
+            hire_date=current_user.hire_date,
+            is_active=current_user.is_active,
+            is_verified=current_user.is_verified,
+            created_at=current_user.created_at
+        )
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update profile"
         )
 
 

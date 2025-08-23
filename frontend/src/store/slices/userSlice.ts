@@ -165,6 +165,17 @@ const userSlice = createSlice({
     removeUserFromList: (state, action: PayloadAction<number>) => {
       state.users = state.users.filter(u => u.id !== action.payload);
     },
+    updateUserProfile: (state, action: PayloadAction<User>) => {
+      // Update user in the list if it exists
+      const index = state.users.findIndex(u => u.id === action.payload.id);
+      if (index !== -1) {
+        state.users[index] = action.payload;
+      }
+      // Update selected user if it matches
+      if (state.selectedUser?.id === action.payload.id) {
+        state.selectedUser = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -282,6 +293,7 @@ export const {
   clearSelectedUser,
   updateUserInList,
   removeUserFromList,
+  updateUserProfile,
 } = userSlice.actions;
 
 export default userSlice.reducer; 

@@ -12,6 +12,8 @@ interface ModalProps {
   cancelText?: string;
   showCancel?: boolean;
   showConfirm?: boolean;
+  customContent?: React.ReactNode;
+  isLoading?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -25,6 +27,8 @@ const Modal: React.FC<ModalProps> = ({
   cancelText = 'Cancel',
   showCancel = true,
   showConfirm = true,
+  customContent,
+  isLoading = false,
 }) => {
   if (!isOpen) return null;
 
@@ -68,10 +72,9 @@ const Modal: React.FC<ModalProps> = ({
   const buttonStyles = getButtonStyles();
 
   const handleConfirm = () => {
-    if (onConfirm) {
+    if (onConfirm && !isLoading) {
       onConfirm();
     }
-    onClose();
   };
 
   return (
@@ -86,21 +89,40 @@ const Modal: React.FC<ModalProps> = ({
         {/* Modal */}
         <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
           <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 sm:mx-0 sm:h-10 sm:w-10">
-                {getIcon()}
+            {customContent ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {title}
+                  </h3>
+                  <button
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                {customContent}
               </div>
-              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                <h3 className="text-base font-semibold leading-6 text-gray-900">
-                  {title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    {message}
-                  </p>
+            ) : (
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 sm:mx-0 sm:h-10 sm:w-10">
+                  {getIcon()}
+                </div>
+                <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                  <h3 className="text-base font-semibold leading-6 text-gray-900">
+                    {title}
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      {message}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* Actions */}
@@ -108,16 +130,25 @@ const Modal: React.FC<ModalProps> = ({
             {showConfirm && (
               <button
                 type="button"
-                className={`inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto ${buttonStyles.confirm}`}
+                disabled={isLoading}
+                className={`inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto ${buttonStyles.confirm} disabled:opacity-50 disabled:cursor-not-allowed`}
                 onClick={handleConfirm}
               >
-                {confirmText}
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  confirmText
+                )}
               </button>
             )}
             {showCancel && (
               <button
                 type="button"
-                className={`mt-3 inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 sm:mt-0 sm:w-auto ${buttonStyles.cancel}`}
+                disabled={isLoading}
+                className={`mt-3 inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-gray-300 sm:mt-0 sm:w-auto ${buttonStyles.cancel} disabled:opacity-50 disabled:cursor-not-allowed`}
                 onClick={onClose}
               >
                 {cancelText}

@@ -17,7 +17,8 @@ import {
   X,
   LogOut,
   Bell,
-  School
+  School,
+  User
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -162,13 +163,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-danger-700 hover:bg-danger-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-3" />
-              Sign out
-            </button>
+            <div className="space-y-2">
+              <NavLink
+                to="/profile"
+                className="w-full flex items-center px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-100 hover:text-secondary-900 rounded-lg transition-colors"
+              >
+                <User className="w-4 h-4 mr-3" />
+                My Profile
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center px-3 py-2 text-sm font-medium text-danger-700 hover:bg-danger-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-3" />
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
       </div>

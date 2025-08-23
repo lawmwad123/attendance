@@ -30,7 +30,7 @@ interface User {
   first_name: string;
   last_name: string;
   full_name: string;
-  role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'SECURITY' | 'STAFF';
+  role: 'ADMIN' | 'TEACHER' | 'PARENT' | 'SECURITY';
   status: 'ACTIVE' | 'INACTIVE';
   phone?: string;
   created_at: string;
@@ -210,8 +210,6 @@ const UsersPage: React.FC = () => {
         return <Heart className="h-4 w-4 text-yellow-600" />;
       case 'SECURITY':
         return <ShieldCheck className="h-4 w-4 text-green-600" />;
-      case 'STAFF':
-        return <Users className="h-4 w-4 text-gray-600" />;
       default:
         return <Users className="h-4 w-4 text-gray-400" />;
     }
@@ -223,7 +221,6 @@ const UsersPage: React.FC = () => {
       TEACHER: 'bg-indigo-100 text-indigo-800 border-indigo-200',
       PARENT: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       SECURITY: 'bg-green-100 text-green-800 border-green-200',
-      STAFF: 'bg-gray-100 text-gray-800 border-gray-200',
     };
     return roleClasses[role] || 'bg-gray-100 text-gray-800';
   };
@@ -240,8 +237,6 @@ const UsersPage: React.FC = () => {
     admin: filteredUsers.filter((u: User) => u.role === 'ADMIN').length,
     teacher: filteredUsers.filter((u: User) => u.role === 'TEACHER').length,
     parent: filteredUsers.filter((u: User) => u.role === 'PARENT').length,
-    security: filteredUsers.filter((u: User) => u.role === 'SECURITY').length,
-    staff: filteredUsers.filter((u: User) => u.role === 'STAFF').length,
   };
 
   const getPanelTitle = () => {
@@ -255,13 +250,11 @@ const UsersPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center text-red-600">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              <span>Error loading users data: {(error as Error).message}</span>
-            </div>
+      <div className="space-y-6">
+        <div className="card p-6">
+          <div className="flex items-center text-red-600">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span>Error loading users data: {(error as Error).message}</span>
           </div>
         </div>
       </div>
@@ -269,303 +262,274 @@ const UsersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <Users className="h-8 w-8 text-indigo-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-                <p className="text-gray-600">Manage system users and their roles</p>
-              </div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-secondary-900">User Management</h1>
+          <p className="text-secondary-600">Manage system users and their roles</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={handleAddUser}
+            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Add User
+          </button>
+        </div>
+      </div>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card p-4">
+          <div className="flex items-center">
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <Users className="h-5 w-5 text-primary-600" />
             </div>
-            
-            <button
-              onClick={handleAddUser}
-              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Add User
-            </button>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-secondary-600">Total Users</p>
+              <p className="text-xl font-bold text-secondary-900">{userCounts.total}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <Shield className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-secondary-600">Admins</p>
+              <p className="text-xl font-bold text-red-600">{userCounts.admin}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <GraduationCap className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-secondary-600">Teachers</p>
+              <p className="text-xl font-bold text-indigo-600">{userCounts.teacher}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Heart className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-secondary-600">Parents</p>
+              <p className="text-xl font-bold text-yellow-600">{userCounts.parent}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      
+      {/* Filters */}
+      <div className="card p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="label">Search Users</label>
+            <div className="relative">
+              <Search className="h-5 w-5 absolute left-3 top-3 text-secondary-400" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or username..."
+                className="input pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="label">Role Filter</label>
+            <div className="relative">
+              <Filter className="h-5 w-5 absolute left-3 top-3 text-secondary-400" />
+              <select
+                className="input pl-10"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                <option value="ADMIN">Admin</option>
+                <option value="TEACHER">Teacher</option>
+                <option value="PARENT">Parent</option>
+                <option value="SECURITY">Security</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label className="label">Status Filter</label>
+            <div className="relative">
+              <Filter className="h-5 w-5 absolute left-3 top-3 text-secondary-400" />
+              <select
+                className="input pl-10"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <Users className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-gray-900">{userCounts.total}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-red-100 p-3 rounded-lg">
-                <Shield className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Admins</p>
-                <p className="text-2xl font-bold text-red-600">{userCounts.admin}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Teachers</p>
-                <p className="text-2xl font-bold text-indigo-600">{userCounts.teacher}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-yellow-100 p-3 rounded-lg">
-                <Heart className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Parents</p>
-                <p className="text-2xl font-bold text-yellow-600">{userCounts.parent}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <ShieldCheck className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Security</p>
-                <p className="text-2xl font-bold text-green-600">{userCounts.security}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-gray-100 p-3 rounded-lg">
-                <Users className="h-6 w-6 text-gray-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Staff</p>
-                <p className="text-2xl font-bold text-gray-900">{userCounts.staff}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div className="relative">
-                <Search className="h-5 w-5 absolute left-3 top-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or username..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div>
-              <div className="relative">
-                <Filter className="h-5 w-5 absolute left-3 top-3.5 text-gray-400" />
-                <select
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                >
-                  <option value="all">All Roles</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="PARENT">Parent</option>
-                  <option value="SECURITY">Security</option>
-                  <option value="STAFF">Staff</option>
-                </select>
-              </div>
-            </div>
-            
-            <div>
-              <div className="relative">
-                <Filter className="h-5 w-5 absolute left-3 top-3.5 text-gray-400" />
-                <select
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Status</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                </select>
-              </div>
-            </div>
+      {/* Users Table */}
+      <div className="card">
+        <div className="p-6 border-b border-secondary-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-secondary-900">
+              System Users ({filteredUsers.length})
+            </h2>
+            <button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+              className="btn-ghost flex items-center"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </button>
           </div>
         </div>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">
-                System Users ({filteredUsers.length})
-              </h2>
-              <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+        {isLoading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-secondary-600">Loading users...</p>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users className="h-16 w-16 text-secondary-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-secondary-900 mb-2">No users found</h3>
+            <p className="text-secondary-600 mb-6">
+              {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Get started by adding your first user.'
+              }
+            </p>
+            {!searchTerm && roleFilter === 'all' && statusFilter === 'all' && (
+              <button onClick={handleAddUser} className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add First User
               </button>
-            </div>
+            )}
           </div>
-
-          {isLoading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading users...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="p-12 text-center">
-              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-600 mb-6">
-                {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'No users available in the system.'
-                }
-              </p>
-              {!searchTerm && roleFilter === 'all' && statusFilter === 'all' && (
-                <button onClick={handleAddUser} className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add First User
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Login
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user: User) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-12 w-12">
-                            <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <Users className="h-6 w-6 text-indigo-600" />
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.full_name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              @{user.username}
-                            </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-secondary-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    Last Login
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-secondary-200">
+                {filteredUsers.map((user: User) => (
+                  <tr key={user.id} className="hover:bg-secondary-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-12 w-12">
+                          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <Users className="h-6 w-6 text-indigo-600" />
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getRoleIcon(user.role)}
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getRoleBadge(user.role)}`}>
-                            {user.role}
-                          </span>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-secondary-900">
+                            {user.full_name}
+                          </div>
+                          <div className="text-sm text-secondary-500">
+                            @{user.username}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(user.status)}`}>
-                          {user.status}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getRoleIcon(user.role)}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getRoleBadge(user.role)}`}>
+                          {user.role}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          <div>{user.email}</div>
-                          {user.phone && (
-                            <div className="text-gray-500">{user.phone}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {user.last_login ? (
-                            new Date(user.last_login).toLocaleDateString()
-                          ) : (
-                            <span className="text-gray-400">Never</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewUser(user)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
-                            title="Edit User"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Delete User"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(user.status)}`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-secondary-900">
+                        <div>{user.email}</div>
+                        {user.phone && (
+                          <div className="text-secondary-500">{user.phone}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-secondary-900">
+                        {user.last_login ? (
+                          new Date(user.last_login).toLocaleDateString()
+                        ) : (
+                          <span className="text-secondary-400">Never</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
+                          title="Edit User"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete User"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Right Slide Panel */}
@@ -741,7 +705,6 @@ const UsersPage: React.FC = () => {
                         <option value="ADMIN">Admin</option>
                         <option value="PARENT">Parent</option>
                         <option value="SECURITY">Security</option>
-                        <option value="STAFF">Staff</option>
                       </select>
                     </div>
                     
@@ -879,4 +842,4 @@ const UsersPage: React.FC = () => {
   );
 };
 
-export default UsersPage; 
+export default UsersPage;

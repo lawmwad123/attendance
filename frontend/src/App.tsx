@@ -22,6 +22,7 @@ import AttendancePage from './pages/AttendancePage';
 import GatePassPage from './pages/GatePassPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Protected Route component
@@ -134,6 +135,14 @@ const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <SettingsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ProfilePage />
             </DashboardLayout>
           </ProtectedRoute>
         } />
