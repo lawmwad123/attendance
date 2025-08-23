@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { logoutUser } from '../../store/slices/authSlice';
 import { toggleSidebar } from '../../store/slices/appSlice';
+import { toast } from 'sonner';
+import Modal from '../ui/Modal';
 import {
   Home,
   Users,
@@ -27,9 +29,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { sidebarOpen, school } = useAppSelector((state) => state.app);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = async () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
     await dispatch(logoutUser());
+    toast.success('Logged out successfully');
     navigate('/login');
   };
 
@@ -226,6 +234,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to log out? You will need to log in again to access the system."
+        type="warning"
+        confirmText="Logout"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

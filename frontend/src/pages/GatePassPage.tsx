@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { 
   LogOut,
@@ -107,7 +108,10 @@ const GatePassPage: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error creating gate pass:', error);
-      alert(error.response?.data?.detail || 'Failed to create gate pass');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to create gate pass. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -124,7 +128,10 @@ const GatePassPage: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error approving gate pass:', error);
-      alert(error.response?.data?.detail || 'Failed to approve gate pass');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to approve gate pass. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -141,7 +148,10 @@ const GatePassPage: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error denying gate pass:', error);
-      alert(error.response?.data?.detail || 'Failed to deny gate pass');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to deny gate pass. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -158,7 +168,7 @@ const GatePassPage: React.FC = () => {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.student_id || !createForm.reason || !createForm.requested_time) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     createGatePassMutation.mutate(createForm);

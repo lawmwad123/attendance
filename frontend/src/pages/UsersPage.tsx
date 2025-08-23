@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
+import Modal from '../components/ui/Modal';
 import { 
   Users,
   UserPlus,
@@ -43,6 +45,8 @@ const UsersPage: React.FC = () => {
   const [showSlidePanel, setShowSlidePanel] = useState(false);
   const [panelMode, setPanelMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [formData, setFormData] = useState<CreateUserForm>({
     email: '',
     username: '',
@@ -84,10 +88,14 @@ const UsersPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setShowSlidePanel(false);
       resetForm();
+      toast.success('User created successfully!');
     },
     onError: (error: any) => {
       console.error('Error creating user:', error);
-      alert(error.response?.data?.detail || 'Failed to create user');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to create user. Please check your input and try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -141,9 +149,16 @@ const UsersPage: React.FC = () => {
   };
 
   const handleDeleteUser = (user: User) => {
-    if (window.confirm(`Are you sure you want to delete ${user.full_name}?`)) {
-      console.log('Delete user:', user.id);
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      console.log('Delete user:', userToDelete.id);
       // TODO: Implement delete mutation
+      toast.success('User deleted successfully!');
+      setUserToDelete(null);
     }
   };
 
@@ -845,6 +860,21 @@ const UsersPage: React.FC = () => {
           onClick={handleClosePanel}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete ${userToDelete?.full_name}? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

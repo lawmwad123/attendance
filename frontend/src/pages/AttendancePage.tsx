@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { 
   Calendar,
@@ -126,7 +127,10 @@ const AttendancePage: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error marking attendance:', error);
-      alert(error.response?.data?.detail || 'Failed to mark attendance');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to mark attendance. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -143,7 +147,10 @@ const AttendancePage: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error bulk marking attendance:', error);
-      alert(error.response?.data?.detail || 'Failed to save attendance');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to save attendance. Please try again.';
+      toast.error(errorMessage);
     },
   });
 

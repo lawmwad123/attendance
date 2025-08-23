@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { store } from './store';
 import { useAppDispatch, useAppSelector } from './hooks/redux';
 import { initializeAuth } from './store/slices/authSlice';
@@ -163,6 +164,12 @@ const App: React.FC = () => {
         <AppInitializer>
           <AppRoutes />
         </AppInitializer>
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000} 
+        />
       </QueryClientProvider>
     </Provider>
   );

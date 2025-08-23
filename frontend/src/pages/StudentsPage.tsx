@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
+import Modal from '../components/ui/Modal';
 import { 
   Plus, 
   Search, 
@@ -51,8 +53,7 @@ interface CreateStudentForm {
   guardian_name?: string;
   guardian_phone?: string;
   guardian_email?: string;
-  class_name?: string;
-  section?: string;
+  class_id?: number;
   admission_date?: string;
 }
 
@@ -62,6 +63,8 @@ const StudentsPage: React.FC = () => {
   const [showSlidePanel, setShowSlidePanel] = useState(false);
   const [panelMode, setPanelMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [formData, setFormData] = useState<CreateStudentForm>({
     student_id: '',
     first_name: '',
@@ -73,8 +76,7 @@ const StudentsPage: React.FC = () => {
     guardian_name: '',
     guardian_phone: '',
     guardian_email: '',
-    class_name: '',
-    section: '',
+    class_id: undefined,
     admission_date: '',
   });
 
@@ -96,6 +98,18 @@ const StudentsPage: React.FC = () => {
     },
   });
 
+  // Fetch classes from backend
+  const { data: classes, isLoading: classesLoading, error: classesError } = useQuery({
+    queryKey: ['classes'],
+    queryFn: async () => {
+      return await api.getClasses();
+    },
+    onError: (error: any) => {
+      console.error('Error loading classes:', error);
+      toast.error('Failed to load classes. Please refresh the page.');
+    },
+  });
+
   // Create student mutation
   const createStudentMutation = useMutation({
     mutationFn: (studentData: CreateStudentForm) => api.createStudent(studentData),
@@ -103,10 +117,14 @@ const StudentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setShowSlidePanel(false);
       resetForm();
+      toast.success('Student created successfully!');
     },
     onError: (error: any) => {
       console.error('Error creating student:', error);
-      alert(error.response?.data?.detail || 'Failed to create student');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to create student. Please check your input and try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -119,10 +137,14 @@ const StudentsPage: React.FC = () => {
       setShowSlidePanel(false);
       setSelectedStudent(null);
       resetForm();
+      toast.success('Student updated successfully!');
     },
     onError: (error: any) => {
       console.error('Error updating student:', error);
-      alert(error.response?.data?.detail || 'Failed to update student');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to update student. Please check your input and try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -131,10 +153,14 @@ const StudentsPage: React.FC = () => {
     mutationFn: (id: number) => api.deleteStudent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Student deleted successfully!');
     },
     onError: (error: any) => {
       console.error('Error deleting student:', error);
-      alert(error.response?.data?.detail || 'Failed to delete student');
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to delete student. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -150,8 +176,7 @@ const StudentsPage: React.FC = () => {
       guardian_name: '',
       guardian_phone: '',
       guardian_email: '',
-      class_name: '',
-      section: '',
+      class_id: undefined,
       admission_date: '',
     });
   };
@@ -176,8 +201,7 @@ const StudentsPage: React.FC = () => {
       guardian_name: student.guardian_name || '',
       guardian_phone: student.guardian_phone || '',
       guardian_email: student.guardian_email || '',
-      class_name: student.class_name || '',
-      section: student.section || '',
+      class_id: undefined, // Will be set based on class lookup
       admission_date: student.admission_date || '',
     });
     setPanelMode('edit');
@@ -193,17 +217,51 @@ const StudentsPage: React.FC = () => {
   };
 
   const handleDeleteStudent = (student: Student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.full_name}?`)) {
-      deleteStudentMutation.mutate(student.id);
+    setStudentToDelete(student);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteStudent = () => {
+    if (studentToDelete) {
+      deleteStudentMutation.mutate(studentToDelete.id);
+      setStudentToDelete(null);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.student_id.trim()) {
+      toast.error('Student ID is required');
+      return;
+    }
+    
+    if (!formData.first_name.trim()) {
+      toast.error('First name is required');
+      return;
+    }
+    
+    if (!formData.last_name.trim()) {
+      toast.error('Last name is required');
+      return;
+    }
+    
+    // Transform form data to match backend expectations
+    const selectedClass = classes?.find(cls => cls.id === formData.class_id);
+    const transformedData = {
+      ...formData,
+      class_name: selectedClass?.name || undefined,
+      section: selectedClass?.name?.split(' - ')[1] || undefined, // Extract section from class name if it exists
+    };
+    
+    // Remove class_id as backend doesn't expect it
+    delete transformedData.class_id;
+    
     if (panelMode === 'edit' && selectedStudent) {
-      updateStudentMutation.mutate({ id: selectedStudent.id, data: formData });
+      updateStudentMutation.mutate({ id: selectedStudent.id, data: transformedData });
     } else {
-      createStudentMutation.mutate(formData);
+      createStudentMutation.mutate(transformedData);
     }
   };
 
@@ -456,10 +514,9 @@ const StudentsPage: React.FC = () => {
                           </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
                         {student.class_name || 'N/A'}
-                        {student.section && ` - ${student.section}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -585,7 +642,6 @@ const StudentsPage: React.FC = () => {
                       <label className="text-sm font-medium text-gray-500">Class</label>
                       <p className="text-gray-900">
                         {selectedStudent.class_name || 'N/A'}
-                        {selectedStudent.section && ` - Section ${selectedStudent.section}`}
                       </p>
                     </div>
                     {selectedStudent.admission_date && (
@@ -724,45 +780,47 @@ const StudentsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Academic Information Section */}
+                                {/* Academic Information Section */}
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Academic Information</h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                  <input
-                    type="text"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                      {classesLoading ? (
+                        <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                          Loading classes...
+                        </div>
+                      ) : classesError ? (
+                        <div className="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 text-red-600">
+                          Failed to load classes
+                        </div>
+                      ) : (
+                        <select
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    value={formData.class_name}
-                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                    placeholder="Grade 8"
-                  />
-                </div>
-                
-                <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                  <input
-                    type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    value={formData.section}
-                    onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                    placeholder="A"
-                  />
-                      </div>
-                </div>
-                
-                <div>
+                          value={formData.class_id || ''}
+                          onChange={(e) => setFormData({ ...formData, class_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                        >
+                          <option value="">Select a class</option>
+                          {classes?.map((cls) => (
+                            <option key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Admission Date</label>
-                  <input
-                    type="date"
+                      <input
+                        type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    value={formData.admission_date}
-                    onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
-                  />
+                        value={formData.admission_date}
+                        onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              </div>
 
                 {/* Guardian Information Section */}
                 <div className="border-t border-gray-200 pt-6">
@@ -859,6 +917,21 @@ const StudentsPage: React.FC = () => {
           onClick={handleClosePanel}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setStudentToDelete(null);
+        }}
+        onConfirm={confirmDeleteStudent}
+        title="Delete Student"
+        message={`Are you sure you want to delete ${studentToDelete?.full_name}? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { loginUser } from '../store/slices/authSlice';
 import { Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -16,7 +17,13 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await dispatch(loginUser({ email, password }));
+    const result = await dispatch(loginUser({ email, password }));
+    
+    if (loginUser.rejected.match(result)) {
+      toast.error(result.payload || 'Login failed. Please check your credentials.');
+    } else if (loginUser.fulfilled.match(result)) {
+      toast.success('Login successful!');
+    }
   };
 
   return (
@@ -32,11 +39,6 @@ const LoginPage: React.FC = () => {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
           
           <div className="space-y-4">
             <div>
