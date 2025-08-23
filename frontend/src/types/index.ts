@@ -19,20 +19,20 @@ export interface User {
 }
 
 export const UserRole = {
-  ADMIN: 'admin',
-  TEACHER: 'teacher',
-  PARENT: 'parent',
-  SECURITY: 'security',
-  STUDENT: 'student'
+  ADMIN: 'ADMIN',
+  TEACHER: 'TEACHER',
+  PARENT: 'PARENT',
+  SECURITY: 'SECURITY',
+  STUDENT: 'STUDENT'
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export const UserStatus = {
-  ACTIVE: 'active',
-  INACTIVE: 'inactive',
-  PENDING: 'pending',
-  SUSPENDED: 'suspended'
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  PENDING: 'PENDING',
+  SUSPENDED: 'SUSPENDED'
 } as const;
 
 export type UserStatus = typeof UserStatus[keyof typeof UserStatus];

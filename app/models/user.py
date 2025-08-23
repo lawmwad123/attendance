@@ -7,19 +7,19 @@ from app.models.base import TenantBaseModel
 
 class UserRole(str, Enum):
     """User roles in the system."""
-    ADMIN = "admin"          # School administrator
-    TEACHER = "teacher"      # Teachers
-    PARENT = "parent"        # Parents
-    SECURITY = "security"    # Security guards
-    STUDENT = "student"      # Students (for future mobile app access)
+    ADMIN = "ADMIN"          # School administrator
+    TEACHER = "TEACHER"      # Teachers
+    PARENT = "PARENT"        # Parents
+    SECURITY = "SECURITY"    # Security guards
+    STUDENT = "STUDENT"      # Students (for future mobile app access)
 
 
 class UserStatus(str, Enum):
     """User status."""
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-    SUSPENDED = "suspended"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    PENDING = "PENDING"
+    SUSPENDED = "SUSPENDED"
 
 
 class User(TenantBaseModel):
