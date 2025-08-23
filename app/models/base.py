@@ -30,7 +30,15 @@ class BaseModel(Base, TimestampMixin):
     
     def dict(self):
         """Convert model to dictionary."""
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        result = {}
+        for c in self.__table__.columns:
+            value = getattr(self, c.name)
+            # Convert datetime objects to ISO format strings
+            if hasattr(value, 'isoformat'):
+                result[c.name] = value.isoformat()
+            else:
+                result[c.name] = value
+        return result
 
 
 class TenantBaseModel(BaseModel, TenantMixin):

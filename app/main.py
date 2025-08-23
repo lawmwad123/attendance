@@ -23,7 +23,8 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-Tenant-ID", "Authorization", "Content-Type"],
+    expose_headers=["*"],
 )
 
 # Add trusted host middleware for security

@@ -38,6 +38,7 @@ class School(BaseModel):
     users = relationship("User", back_populates="school")
     students = relationship("Student", back_populates="school")
     classes = relationship("Class", back_populates="school")
+    settings = relationship("SchoolSettings", back_populates="school", uselist=False)
     
     def __repr__(self):
         return f"<School(name='{self.name}', slug='{self.slug}')>" 

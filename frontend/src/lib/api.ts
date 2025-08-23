@@ -2,6 +2,127 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import type { LoginRequest, LoginResponse, User, School, SchoolStats, UserFilters, CreateUserForm, UpdateUserForm } from '../types';
 
+// Settings types
+interface SchoolSettings {
+  id: number;
+  school_id: number;
+  school_name: string;
+  school_motto?: string;
+  school_logo_url?: string;
+  school_address?: string;
+  school_phone?: string;
+  school_email?: string;
+  school_website?: string;
+  timezone: string;
+  default_attendance_mode: string;
+  gate_pass_approval_workflow: string;
+  biometric_type?: string;
+  notification_channels?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface SettingsSummary {
+  general: {
+    school_name: string;
+    school_motto?: string;
+    school_logo_url?: string;
+    school_address?: string;
+    school_phone?: string;
+    school_email?: string;
+    school_website?: string;
+    timezone: string;
+  };
+  attendance: {
+    default_attendance_mode: string;
+    morning_attendance_start?: string;
+    morning_attendance_end?: string;
+    afternoon_attendance_start?: string;
+    afternoon_attendance_end?: string;
+    late_arrival_threshold?: string;
+    absent_threshold?: string;
+    auto_logout_time?: string;
+  };
+  gate_pass: {
+    gate_pass_approval_workflow: string;
+    gate_pass_auto_expiry_hours: number;
+    allowed_exit_start_time?: string;
+    allowed_exit_end_time?: string;
+    emergency_override_roles?: string[];
+  };
+  notifications: {
+    notification_channels?: string[];
+    parent_notification_on_entry: boolean;
+    parent_notification_on_exit: boolean;
+    parent_notification_late_arrival: boolean;
+    teacher_notification_absentees: boolean;
+    security_notification_gate_pass: boolean;
+  };
+  biometric: {
+    biometric_type?: string;
+    biometric_enrollment_fingers: number;
+    biometric_retry_attempts: number;
+    rfid_card_format?: string;
+    card_reissue_policy?: string;
+  };
+  total_classes: number;
+  total_subjects: number;
+  total_devices: number;
+}
+
+interface ClassLevel {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  order: number;
+  is_active: boolean;
+  school_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Class {
+  id: number;
+  name: string;
+  code: string;
+  level_id: number;
+  teacher_id?: number;
+  capacity: number;
+  is_active: boolean;
+  school_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Subject {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  is_core: boolean;
+  is_active: boolean;
+  school_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Device {
+  id: number;
+  name: string;
+  device_type: string;
+  device_id: string;
+  location: string;
+  ip_address?: string;
+  port?: number;
+  api_key?: string;
+  is_active: boolean;
+  last_sync?: string;
+  school_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const API_VERSION = '/api/v1';
@@ -295,6 +416,126 @@ class ApiClient {
 
   async deleteGatePass(passId: number): Promise<void> {
     await apiClient.delete(`/gate-pass/${passId}`);
+  }
+
+  // Settings
+  async getSettingsSummary(): Promise<SettingsSummary> {
+    const response = await apiClient.get<SettingsSummary>('/settings/summary');
+    return response.data;
+  }
+
+  async getSchoolSettings(): Promise<SchoolSettings> {
+    const response = await apiClient.get<SchoolSettings>('/settings/');
+    return response.data;
+  }
+
+  async updateSchoolSettings(settings: Partial<SchoolSettings>): Promise<SchoolSettings> {
+    const response = await apiClient.put<SchoolSettings>('/settings/', settings);
+    return response.data;
+  }
+
+  // Class Levels
+  async getClassLevels(): Promise<ClassLevel[]> {
+    const response = await apiClient.get<ClassLevel[]>('/settings/class-levels');
+    return response.data;
+  }
+
+  async createClassLevel(classLevel: { name: string; code: string; description?: string; order?: number }): Promise<ClassLevel> {
+    const response = await apiClient.post<ClassLevel>('/settings/class-levels', classLevel);
+    return response.data;
+  }
+
+  async updateClassLevel(id: number, classLevel: Partial<ClassLevel>): Promise<ClassLevel> {
+    const response = await apiClient.put<ClassLevel>(`/settings/class-levels/${id}`, classLevel);
+    return response.data;
+  }
+
+  async deleteClassLevel(id: number): Promise<void> {
+    await apiClient.delete(`/settings/class-levels/${id}`);
+  }
+
+  // Classes
+  async getClasses(levelId?: number): Promise<Class[]> {
+    const params = levelId ? `?level_id=${levelId}` : '';
+    const response = await apiClient.get<Class[]>(`/settings/classes${params}`);
+    return response.data;
+  }
+
+  async createClass(classData: { name: string; code: string; level_id: number; teacher_id?: number; capacity?: number }): Promise<Class> {
+    const response = await apiClient.post<Class>('/settings/classes', classData);
+    return response.data;
+  }
+
+  async updateClass(id: number, classData: Partial<Class>): Promise<Class> {
+    const response = await apiClient.put<Class>(`/settings/classes/${id}`, classData);
+    return response.data;
+  }
+
+  async deleteClass(id: number): Promise<void> {
+    await apiClient.delete(`/settings/classes/${id}`);
+  }
+
+  // Subjects
+  async getSubjects(isCore?: boolean): Promise<Subject[]> {
+    const params = isCore !== undefined ? `?is_core=${isCore}` : '';
+    const response = await apiClient.get<Subject[]>(`/settings/subjects${params}`);
+    return response.data;
+  }
+
+  async createSubject(subject: { name: string; code: string; description?: string; is_core?: boolean }): Promise<Subject> {
+    const response = await apiClient.post<Subject>('/settings/subjects', subject);
+    return response.data;
+  }
+
+  async updateSubject(id: number, subject: Partial<Subject>): Promise<Subject> {
+    const response = await apiClient.put<Subject>(`/settings/subjects/${id}`, subject);
+    return response.data;
+  }
+
+  async deleteSubject(id: number): Promise<void> {
+    await apiClient.delete(`/settings/subjects/${id}`);
+  }
+
+  // Devices
+  async getDevices(deviceType?: string): Promise<Device[]> {
+    const params = deviceType ? `?device_type=${deviceType}` : '';
+    const response = await apiClient.get<Device[]>(`/settings/devices${params}`);
+    return response.data;
+  }
+
+  async createDevice(device: { name: string; device_type: string; device_id: string; location: string; ip_address?: string; port?: number }): Promise<Device> {
+    const response = await apiClient.post<Device>('/settings/devices', device);
+    return response.data;
+  }
+
+  async updateDevice(id: number, device: Partial<Device>): Promise<Device> {
+    const response = await apiClient.put<Device>(`/settings/devices/${id}`, device);
+    return response.data;
+  }
+
+  async deleteDevice(id: number): Promise<void> {
+    await apiClient.delete(`/settings/devices/${id}`);
+  }
+
+  // ENUMs
+  async getAttendanceModes(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/settings/enums/attendance-modes');
+    return response.data;
+  }
+
+  async getBiometricTypes(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/settings/enums/biometric-types');
+    return response.data;
+  }
+
+  async getNotificationChannels(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/settings/enums/notification-channels');
+    return response.data;
+  }
+
+  async getGatePassWorkflows(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/settings/enums/gate-pass-workflows');
+    return response.data;
   }
 
   // Generic API method for custom requests

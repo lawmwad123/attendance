@@ -70,7 +70,7 @@ class Student(TenantBaseModel):
     # Relationships
     school = relationship("School", back_populates="students", foreign_keys="Student.school_id")
     parent = relationship("User", back_populates="children", foreign_keys=[parent_id])
-    class_assigned = relationship("Class", back_populates="students")
+    class_ = relationship("Class", back_populates="students")
     attendance_records = relationship("Attendance", back_populates="student")
     gate_pass_requests = relationship("GatePass", back_populates="student")
     
@@ -82,35 +82,4 @@ class Student(TenantBaseModel):
         return f"<Student(student_id='{self.student_id}', name='{self.full_name}', school_id={self.school_id})>"
 
 
-class Class(TenantBaseModel):
-    """
-    Class/Section model.
-    """
-    __tablename__ = "classes"
-    
-    name = Column(String(100), nullable=False)  # e.g., "Grade 5-A"
-    grade_level = Column(String(10), nullable=False)  # e.g., "Grade 5"
-    section = Column(String(10), nullable=True)       # e.g., "A"
-    subject = Column(String(100), nullable=True)      # For subject-specific classes
-    
-    # Teacher Assignment
-    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    
-    # Class Details
-    room_number = Column(String(20), nullable=True)
-    capacity = Column(Integer, default=30)
-    current_strength = Column(Integer, default=0)
-    
-    # Schedule (basic)
-    schedule_info = Column(Text, nullable=True)  # JSON string for detailed schedule
-    
-    # Status
-    is_active = Column(Boolean, default=True)
-    
-    # Relationships
-    school = relationship("School", back_populates="classes", foreign_keys="Class.school_id")
-    teacher = relationship("User", back_populates="classes_taught")
-    students = relationship("Student", back_populates="class_assigned")
-    
-    def __repr__(self):
-        return f"<Class(name='{self.name}', teacher_id={self.teacher_id}, school_id={self.school_id})>" 
+ 

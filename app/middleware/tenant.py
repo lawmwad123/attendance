@@ -30,6 +30,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/":
             return await call_next(request)
         
+        # Skip tenant checking for OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         for skip_path in skip_paths:
             if request.url.path.startswith(skip_path):
                 return await call_next(request)
