@@ -111,7 +111,7 @@ const UsersPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
+      <div>
           <h1 className="text-2xl font-bold text-secondary-900">User Management</h1>
           <p className="text-secondary-600">Manage system users and their roles</p>
         </div>
@@ -197,7 +197,7 @@ const UsersPage: React.FC = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Filters */}
       <div className="card p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

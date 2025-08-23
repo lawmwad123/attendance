@@ -211,14 +211,14 @@ const StudentsPage: React.FC = () => {
   };
 
   if (error) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Students</h1>
-          <p className="text-secondary-600">Manage student profiles and information</p>
-        </div>
-        
-        <div className="card p-6">
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-secondary-900">Students</h1>
+        <p className="text-secondary-600">Manage student profiles and information</p>
+      </div>
+      
+      <div className="card p-6">
           <div className="flex items-center text-danger-600">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Error loading students data: {(error as Error).message}</span>
