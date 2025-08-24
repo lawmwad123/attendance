@@ -211,14 +211,32 @@ async def create_gate_pass(
         # Map frontend type to backend enum
         pass_type = _map_frontend_type_to_enum(gate_pass_data.type)
         
+        # Parse datetime with better error handling
+        try:
+            # Handle different datetime formats
+            time_str = gate_pass_data.requested_time
+            if 'Z' in time_str:
+                time_str = time_str.replace('Z', '+00:00')
+            elif '+' not in time_str and 'T' in time_str:
+                # If it's a datetime-local format without timezone, assume local time
+                time_str = time_str + '+00:00'
+            
+            requested_time = datetime.fromisoformat(time_str)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid datetime format: {gate_pass_data.requested_time}. Error: {str(e)}"
+            )
+        
         # Create gate pass
         gate_pass = GatePass(
+            school_id=school_id,  # Add school_id from tenant filter
             student_id=gate_pass_data.student_id,
             pass_number=pass_number,
             pass_type=pass_type,
             reason=gate_pass_data.reason,
             status=GatePassStatus.PENDING,
-            requested_exit_time=datetime.fromisoformat(gate_pass_data.requested_time.replace('Z', '+00:00')),
+            requested_exit_time=requested_time,
             requested_by_user_id=current_user.id,
             special_instructions=gate_pass_data.notes
         )
@@ -257,9 +275,10 @@ async def create_gate_pass(
         
     except Exception as e:
         await db.rollback()
+        print(f"Error creating gate pass: {str(e)}")  # Add logging for debugging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create gate pass"
+            detail=f"Failed to create gate pass: {str(e)}"
         )
 
 
@@ -565,9 +584,8 @@ async def delete_gate_pass(
 def _map_gate_pass_type(pass_type: GatePassType) -> str:
     """Map backend enum to frontend string."""
     mapping = {
-        GatePassType.EARLY_EXIT: "exit",
-        GatePassType.LATE_ARRIVAL: "entry",
-        GatePassType.APPOINTMENT: "temporary",
+        GatePassType.EARLY_DISMISSAL: "exit",
+        GatePassType.MEDICAL: "temporary",
         GatePassType.EMERGENCY: "exit",
         GatePassType.PARENT_PICKUP: "exit",
         GatePassType.FIELD_TRIP: "exit",
@@ -593,8 +611,8 @@ def _map_gate_pass_status(status: GatePassStatus) -> str:
 def _map_frontend_type_to_enum(frontend_type: str) -> GatePassType:
     """Map frontend string to backend enum."""
     mapping = {
-        "exit": GatePassType.EARLY_EXIT,
-        "entry": GatePassType.LATE_ARRIVAL,
-        "temporary": GatePassType.APPOINTMENT
+        "exit": GatePassType.EARLY_DISMISSAL,
+        "entry": GatePassType.MEDICAL,  # Using MEDICAL for entry type
+        "temporary": GatePassType.MEDICAL
     }
     return mapping.get(frontend_type, GatePassType.OTHER) 
