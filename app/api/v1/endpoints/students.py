@@ -264,6 +264,16 @@ async def update_student(
         for field, value in update_data.items():
             if field == "class_name":
                 setattr(student, "grade_level", value)
+            elif field == "status":
+                # Map string status to enum
+                if value == "active":
+                    student.status = StudentStatus.ACTIVE
+                elif value == "inactive":
+                    student.status = StudentStatus.INACTIVE
+                elif value == "graduated":
+                    student.status = StudentStatus.GRADUATED
+                elif value == "transferred":
+                    student.status = StudentStatus.TRANSFERRED
             elif hasattr(student, field):
                 setattr(student, field, value)
         

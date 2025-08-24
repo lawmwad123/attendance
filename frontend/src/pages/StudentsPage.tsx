@@ -58,6 +58,7 @@ interface CreateStudentForm {
   guardian_email?: string;
   class_id?: number;
   admission_date?: string;
+  status?: string;
 }
 
 const StudentsPage: React.FC = () => {
@@ -81,6 +82,7 @@ const StudentsPage: React.FC = () => {
     guardian_email: '',
     class_id: undefined,
     admission_date: '',
+    status: 'active',
   });
 
   const queryClient = useQueryClient();
@@ -181,6 +183,7 @@ const StudentsPage: React.FC = () => {
       guardian_email: '',
       class_id: undefined,
       admission_date: '',
+      status: 'active',
     });
   };
 
@@ -206,6 +209,7 @@ const StudentsPage: React.FC = () => {
       guardian_email: student.guardian_email || '',
       class_id: undefined, // Will be set based on class lookup
       admission_date: student.admission_date || '',
+      status: student.status,
     });
     setPanelMode('edit');
     setShowSlidePanel(true);
@@ -229,6 +233,28 @@ const StudentsPage: React.FC = () => {
       deleteStudentMutation.mutate(studentToDelete.id);
       setStudentToDelete(null);
     }
+  };
+
+  const handleQuickStatusToggle = (student: Student) => {
+    const newStatus = student.status === 'active' ? 'inactive' : 'active';
+    updateStudentMutation.mutate({
+      id: student.id,
+      data: { status: newStatus }
+    }, {
+      onSuccess: () => {
+        toast.success(`Student ${student.full_name} ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
+        // Update the selected student in the panel
+        if (selectedStudent && selectedStudent.id === student.id) {
+          setSelectedStudent({ ...selectedStudent, status: newStatus });
+        }
+      },
+      onError: (error: any) => {
+        const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to update student status. Please try again.';
+        toast.error(errorMessage);
+      }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -569,6 +595,22 @@ const StudentsPage: React.FC = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleQuickStatusToggle(student)}
+                          className={`p-1 rounded transition-colors ${
+                            student.status === 'active' 
+                              ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
+                              : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                          }`}
+                          title={student.status === 'active' ? 'Deactivate Student' : 'Activate Student'}
+                          disabled={updateStudentMutation.isPending}
+                        >
+                          {student.status === 'active' ? (
+                            <div className="w-4 h-4 border-2 border-orange-600 rounded-full"></div>
+                          ) : (
+                            <div className="w-4 h-4 bg-green-600 rounded-full"></div>
+                          )}
+                        </button>
+                        <button
                           onClick={() => handleDeleteStudent(student)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
                           title="Delete Student"
@@ -685,11 +727,18 @@ const StudentsPage: React.FC = () => {
                     )}
                     <div>
                       <label className="text-sm font-medium text-gray-500">Status</label>
-                      <p>
+                      <div className="flex items-center space-x-3">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(selectedStudent.status)}`}>
                           {selectedStudent.status}
                         </span>
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickStatusToggle(selectedStudent)}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          {selectedStudent.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -868,6 +917,20 @@ const StudentsPage: React.FC = () => {
                         value={formData.admission_date}
                         onChange={(e) => setFormData({ ...formData, admission_date: e.target.value })}
                       />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        value={formData.status || 'active'}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="graduated">Graduated</option>
+                        <option value="transferred">Transferred</option>
+                      </select>
                     </div>
                   </div>
                 </div>

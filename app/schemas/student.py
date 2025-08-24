@@ -42,6 +42,7 @@ class StudentUpdate(BaseModel):
     section: Optional[str] = Field(None, max_length=10)
     admission_date: Optional[date] = None
     profile_image: Optional[str] = None
+    status: Optional[str] = None
 
 
 class Student(StudentBase):

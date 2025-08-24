@@ -92,7 +92,7 @@ const GatePassPage: React.FC = () => {
 
   // Fetch students for pass creation
   const { data: students } = useQuery<Student[]>({
-    queryKey: ['students', 'active'],
+    queryKey: ['students'],
     queryFn: async () => {
       return await api.getStudents({ status: 'active' });
     },
