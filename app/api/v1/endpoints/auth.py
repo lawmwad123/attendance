@@ -3,14 +3,15 @@ from fastapi.security import HTTPBearer
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from app.api.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.core.security import verify_password, create_access_token, get_password_hash
 from app.core.file_upload import file_upload_service
+from app.core.email import email_service
 from app.models.user import User
-from app.schemas.user import UserLogin, Token, UserProfile, PasswordChange, UserUpdate
+from app.schemas.user import UserLogin, Token, UserProfile, PasswordChange, UserUpdate, ForgotPassword, ResetPassword
 from app.middleware.tenant import get_current_school_id
 
 router = APIRouter()
@@ -415,3 +416,143 @@ async def get_profile_image(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Profile image file not found"
     )
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    forgot_password_data: ForgotPassword,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Request password reset for a user.
+    """
+    # Get current school from tenant context
+    school_id = get_current_school_id(request)
+    if not school_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="School context required"
+        )
+    
+    # Find user by email and school
+    stmt = select(User).where(
+        User.email == forgot_password_data.email.lower(),
+        User.school_id == school_id
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    # Always return success to prevent email enumeration attacks
+    if not user:
+        return {"message": "If the email exists, a password reset link has been sent"}
+    
+    if not user.is_active:
+        return {"message": "If the email exists, a password reset link has been sent"}
+    
+    try:
+        # Generate reset token
+        reset_token = email_service.generate_reset_token()
+        reset_token_expires = datetime.utcnow() + timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
+        
+        # Update user with reset token
+        user.reset_token = reset_token
+        user.reset_token_expires = reset_token_expires
+        
+        await db.commit()
+        await db.refresh(user)
+        
+        # Get school name for email
+        from app.models.school import School
+        school_stmt = select(School).where(School.id == school_id)
+        school_result = await db.execute(school_stmt)
+        school = school_result.scalar_one_or_none()
+        school_name = school.name if school else "School"
+        
+        # Send password reset email
+        email_sent = email_service.send_password_reset_email(
+            to_email=user.email,
+            reset_token=reset_token,
+            user_name=user.full_name,
+            school_name=school_name
+        )
+        
+        if email_sent:
+            return {"message": "Password reset email sent successfully"}
+        else:
+            # If email fails, clear the token
+            user.reset_token = None
+            user.reset_token_expires = None
+            await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send password reset email"
+            )
+            
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process password reset request"
+        )
+
+
+@router.post("/reset-password")
+async def reset_password(
+    reset_password_data: ResetPassword,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reset password using reset token.
+    """
+    # Get current school from tenant context
+    school_id = get_current_school_id(request)
+    if not school_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="School context required"
+        )
+    
+    # Find user by reset token and school
+    stmt = select(User).where(
+        User.reset_token == reset_password_data.token,
+        User.school_id == school_id
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Check if token is expired
+    if user.reset_token_expires and user.reset_token_expires < datetime.utcnow():
+        # Clear expired token
+        user.reset_token = None
+        user.reset_token_expires = None
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired"
+        )
+    
+    try:
+        # Update password and clear reset token
+        user.hashed_password = get_password_hash(reset_password_data.new_password)
+        user.reset_token = None
+        user.reset_token_expires = None
+        
+        await db.commit()
+        await db.refresh(user)
+        
+        return {"message": "Password reset successfully"}
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
+        )

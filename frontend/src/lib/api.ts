@@ -255,6 +255,19 @@ class ApiClient {
     });
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    await apiClient.post('/auth/forgot-password', {
+      email: email.toLowerCase(),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await apiClient.post('/auth/reset-password', {
+      token: token,
+      new_password: newPassword,
+    });
+  }
+
   // Schools
   async getCurrentSchool(): Promise<School> {
     const response = await apiClient.get<School>('/schools/current');

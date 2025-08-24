@@ -115,4 +115,21 @@ class PasswordChange(BaseModel):
     def validate_new_password(cls, v):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
+        return v
+
+
+class ForgotPassword(BaseModel):
+    """Schema for forgot password request."""
+    email: EmailStr
+
+
+class ResetPassword(BaseModel):
+    """Schema for resetting password."""
+    token: str
+    new_password: str
+    
+    @validator('new_password')
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
         return v 

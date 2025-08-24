@@ -17,6 +17,8 @@ import DashboardLayout from './components/layouts/DashboardLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
@@ -83,6 +85,18 @@ const AppRoutes: React.FC = () => {
         <Route path="/register" element={
           <PublicLayout>
             <RegisterPage />
+          </PublicLayout>
+        } />
+        
+        <Route path="/forgot-password" element={
+          <PublicLayout>
+            <ForgotPasswordPage />
+          </PublicLayout>
+        } />
+        
+        <Route path="/reset-password" element={
+          <PublicLayout>
+            <ResetPasswordPage />
           </PublicLayout>
         } />
         

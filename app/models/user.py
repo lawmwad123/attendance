@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from enum import Enum
+from datetime import datetime
 
 from app.models.base import TenantBaseModel
 
@@ -51,6 +52,10 @@ class User(TenantBaseModel):
     
     # Profile Image
     profile_image = Column(String(255), nullable=True)  # Path to profile image
+    
+    # Password Reset
+    reset_token = Column(String(255), nullable=True, index=True)
+    reset_token_expires = Column(DateTime, nullable=True)
     
     # Relationships
     school = relationship("School", back_populates="users", foreign_keys="User.school_id")
