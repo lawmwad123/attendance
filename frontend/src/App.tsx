@@ -8,10 +8,12 @@ import { useAppDispatch, useAppSelector } from './hooks/redux';
 import { initializeAuth } from './store/slices/authSlice';
 import { setTenantId } from './store/slices/appSlice';
 import { getTenantId } from './lib/api';
+import { getCurrentAdmin } from './store/slices/adminSlice';
 
 // Layout components
 import PublicLayout from './components/layouts/PublicLayout';
 import DashboardLayout from './components/layouts/DashboardLayout';
+import AdminLayout from './components/layouts/AdminLayout';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -30,6 +32,10 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
+
+// Admin Pages
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 // Protected Route component
 interface ProtectedRouteProps {
@@ -50,6 +56,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+// Admin Protected Route component
+interface AdminProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAppSelector((state) => state.admin);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/admin/login" replace />;
+};
+
 // App initialization component
 const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
@@ -57,6 +82,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   useEffect(() => {
     // Initialize auth state from localStorage
     dispatch(initializeAuth());
+
+    // Initialize admin auth state from localStorage
+    dispatch(getCurrentAdmin());
 
     // Set tenant ID from URL or localStorage
     const tenantId = getTenantId();
@@ -102,6 +130,17 @@ const AppRoutes: React.FC = () => {
         
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+
+        {/* Admin routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        
+        <Route path="/admin" element={
+          <AdminProtectedRoute>
+            <AdminLayout>
+              <AdminDashboardPage />
+            </AdminLayout>
+          </AdminProtectedRoute>
+        } />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={

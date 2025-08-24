@@ -50,7 +50,7 @@ def test_email_sending():
     try:
         # Test email sending
         success = email_service.send_email(
-            to_email="test@example.com",  # Replace with your test email
+            to_email="lawmwad@gmail.com",  # Replace with your test email
             subject="Test Email - School Attendance System",
             html_content="""
             <html>
@@ -113,12 +113,12 @@ def main():
     
     # Test email sending (only if user wants to)
     print("\n" + "=" * 40)
-    print("To test email sending, edit this script and replace 'test@example.com'")
+    print("To test email sending, edit this script and replace 'lawmwad@gmail.com'")
     print("with your actual email address, then run the script again.")
     print("=" * 40)
     
-    # Uncomment the line below to test email sending
-    # email_ok = test_email_sending()
+    # Test email sending
+    email_ok = test_email_sending()
     
     if config_ok and token_ok:
         print("\n✅ Email functionality is ready!")

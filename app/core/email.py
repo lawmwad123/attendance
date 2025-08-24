@@ -67,10 +67,13 @@ class EmailService:
         """Generate a secure reset token."""
         return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
     
-    def send_password_reset_email(self, to_email: str, reset_token: str, user_name: str, school_name: str = "School"):
+    def send_password_reset_email(self, to_email: str, reset_token: str, user_name: str, school_name: str = "School", tenant_id: str = None):
         """Send password reset email."""
-        # Create reset URL (frontend will handle the token)
-        reset_url = f"http://localhost:5173/reset-password?token={reset_token}"
+        # Create reset URL with tenant information
+        if tenant_id:
+            reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}&tenant={tenant_id}"
+        else:
+            reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
         
         subject = f"Password Reset Request - {school_name}"
         
@@ -104,7 +107,7 @@ class EmailService:
                     <p>To reset your password, click the button below:</p>
                     
                     <div style="text-align: center;">
-                        <a href="{reset_url}" class="button">Reset Password</a>
+                        <a href="{reset_url}" class="button" style="color: #ffffff;">Reset Password</a>
                     </div>
                     
                     <p>Or copy and paste this link into your browser:</p>

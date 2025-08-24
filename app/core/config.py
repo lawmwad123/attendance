@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5174,http://localhost:5174"
     ALLOWED_HOSTS: List[str] = ["*"]  # Configure for production
+    
+    # Frontend URL for email links
+    FRONTEND_URL: str = "http://localhost:5174"
     
     # Multi-tenancy
     DEFAULT_TENANT_ID: str = "demo-school"

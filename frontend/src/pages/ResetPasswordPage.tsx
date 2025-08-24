@@ -27,12 +27,18 @@ const ResetPasswordPage: React.FC = () => {
   });
 
   const token = searchParams.get('token');
+  const tenant = searchParams.get('tenant');
 
   useEffect(() => {
     if (!token) {
       setErrors(prev => ({ ...prev, token: 'Invalid or missing reset token' }));
     }
-  }, [token]);
+    
+    // Set tenant from URL if provided
+    if (tenant) {
+      localStorage.setItem('tenant_id', tenant);
+    }
+  }, [token, tenant]);
 
   const validateForm = () => {
     const newErrors: { password?: string; confirmPassword?: string } = {};

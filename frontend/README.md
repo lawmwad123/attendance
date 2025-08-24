@@ -83,11 +83,11 @@ npm run dev
 
 5. **Open in browser**
 ```
-http://localhost:5173
+http://localhost:5174
 ```
 
 ### Demo Access
-- **URL**: http://localhost:5173?tenant=demo
+- **URL**: http://localhost:5174?tenant=demo
 - **Email**: admin@demo-school.com
 - **Password**: admin123
 
@@ -97,7 +97,7 @@ http://localhost:5173
 
 #### Method 1: Query Parameter (Development)
 ```
-http://localhost:5173?tenant=demo
+http://localhost:5174?tenant=demo
 ```
 
 #### Method 2: Header (API Testing)

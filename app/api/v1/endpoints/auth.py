@@ -455,6 +455,10 @@ async def forgot_password(
         reset_token = email_service.generate_reset_token()
         reset_token_expires = datetime.utcnow() + timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
         
+        # Debug logging
+        print(f"DEBUG: Generated reset token for {user.email}: {reset_token[:10]}...")
+        print(f"DEBUG: Token expires at: {reset_token_expires}")
+        
         # Update user with reset token
         user.reset_token = reset_token
         user.reset_token_expires = reset_token_expires
@@ -469,12 +473,16 @@ async def forgot_password(
         school = school_result.scalar_one_or_none()
         school_name = school.name if school else "School"
         
+        # Get tenant ID from request
+        tenant_id = request.headers.get(settings.TENANT_HEADER_NAME)
+        
         # Send password reset email
         email_sent = email_service.send_password_reset_email(
             to_email=user.email,
             reset_token=reset_token,
             user_name=user.full_name,
-            school_name=school_name
+            school_name=school_name,
+            tenant_id=tenant_id
         )
         
         if email_sent:
@@ -514,6 +522,9 @@ async def reset_password(
             detail="School context required"
         )
     
+    # Debug logging
+    print(f"DEBUG: Reset password request - Token: {reset_password_data.token[:10]}..., School ID: {school_id}")
+    
     # Find user by reset token and school
     stmt = select(User).where(
         User.reset_token == reset_password_data.token,
@@ -521,6 +532,19 @@ async def reset_password(
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
+    
+    # Debug logging
+    if user:
+        print(f"DEBUG: User found - ID: {user.id}, Email: {user.email}")
+    else:
+        print(f"DEBUG: No user found with token: {reset_password_data.token[:10]}...")
+        # Check if token exists in any school
+        all_tokens_stmt = select(User).where(User.reset_token == reset_password_data.token)
+        all_tokens_result = await db.execute(all_tokens_stmt)
+        all_tokens_users = all_tokens_result.scalars().all()
+        print(f"DEBUG: Found {len(all_tokens_users)} users with this token across all schools")
+        for u in all_tokens_users:
+            print(f"DEBUG: - User ID: {u.id}, Email: {u.email}, School ID: {u.school_id}")
     
     if not user:
         raise HTTPException(
