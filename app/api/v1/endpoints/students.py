@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 from typing import List, Optional
 
 from app.api.deps import get_db, require_teacher_or_admin, require_admin, get_tenant_filter
+from app.core.file_upload import file_upload_service
 from app.models.user import User
 from app.models.student import Student, StudentStatus
 from app.schemas.student import (
@@ -86,6 +88,7 @@ async def get_students(
             class_name=student.grade_level,
             section=student.section,
             admission_date=student.admission_date.isoformat() if student.admission_date else None,
+            profile_image=student.profile_image,
             status=student.status.value,
             created_at=student.created_at.isoformat()
         ))
@@ -211,6 +214,7 @@ async def create_student(
             class_name=student.grade_level,
             section=student.section,
             admission_date=student.admission_date.isoformat() if student.admission_date else None,
+            profile_image=student.profile_image,
             status=student.status.value,
             created_at=student.created_at.isoformat()
         )
@@ -282,6 +286,7 @@ async def update_student(
             class_name=student.grade_level,
             section=student.section,
             admission_date=student.admission_date.isoformat() if student.admission_date else None,
+            profile_image=student.profile_image,
             status=student.status.value,
             created_at=student.created_at.isoformat()
         )
@@ -338,4 +343,171 @@ async def delete_student(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete student"
-        ) 
+        )
+
+
+@router.post("/{student_id}/upload-profile-image")
+async def upload_student_profile_image(
+    student_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_teacher_or_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload profile image for a student.
+    """
+    tenant_filter = get_tenant_filter(request)
+    school_id = tenant_filter["school_id"]
+    
+    # Get student
+    stmt = select(Student).where(
+        and_(
+            Student.id == student_id,
+            Student.school_id == school_id
+        )
+    )
+    result = await db.execute(stmt)
+    student = result.scalar_one_or_none()
+    
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+    
+    try:
+        # Process and save the image
+        image_path = await file_upload_service.process_and_save_profile_image(
+            file=file,
+            user_id=student_id,
+            school_id=school_id
+        )
+        
+        # Delete old profile image if exists
+        if student.profile_image:
+            await file_upload_service.delete_profile_image(student.profile_image)
+        
+        # Update student profile with new image path
+        student.profile_image = image_path
+        
+        await db.commit()
+        await db.refresh(student)
+        
+        return {
+            "message": "Student profile image uploaded successfully",
+            "image_path": image_path,
+            "image_url": file_upload_service.get_image_url(image_path)
+        }
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload student profile image: {str(e)}"
+        )
+
+
+@router.delete("/{student_id}/delete-profile-image")
+async def delete_student_profile_image(
+    student_id: int,
+    request: Request,
+    current_user: User = Depends(require_teacher_or_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete profile image for a student.
+    """
+    tenant_filter = get_tenant_filter(request)
+    school_id = tenant_filter["school_id"]
+    
+    # Get student
+    stmt = select(Student).where(
+        and_(
+            Student.id == student_id,
+            Student.school_id == school_id
+        )
+    )
+    result = await db.execute(stmt)
+    student = result.scalar_one_or_none()
+    
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+    
+    try:
+        if not student.profile_image:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No profile image found"
+            )
+        
+        # Delete the file
+        deleted = await file_upload_service.delete_profile_image(student.profile_image)
+        
+        if deleted:
+            # Update student profile
+            student.profile_image = None
+            await db.commit()
+            await db.refresh(student)
+            
+            return {"message": "Student profile image deleted successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete profile image file"
+            )
+            
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete student profile image: {str(e)}"
+        )
+
+
+@router.get("/{student_id}/profile-image")
+async def get_student_profile_image(
+    student_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get profile image for a student.
+    """
+    tenant_filter = get_tenant_filter(request)
+    school_id = tenant_filter["school_id"]
+    
+    # Get student
+    stmt = select(Student).where(
+        and_(
+            Student.id == student_id,
+            Student.school_id == school_id
+        )
+    )
+    result = await db.execute(stmt)
+    student = result.scalar_one_or_none()
+    
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+    
+    if not student.profile_image:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No profile image found"
+        )
+    
+    # Serve the image
+    response = await file_upload_service.serve_image(student.profile_image)
+    if response:
+        return response
+    
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Profile image file not found"
+    ) 

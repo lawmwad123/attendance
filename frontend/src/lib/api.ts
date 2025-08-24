@@ -354,6 +354,23 @@ class ApiClient {
     await apiClient.delete(`/students/${studentId}`);
   }
 
+  async uploadStudentProfileImage(studentId: number, file: File): Promise<{ message: string; image_path: string; image_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await apiClient.post(`/students/${studentId}/upload-profile-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async deleteStudentProfileImage(studentId: number): Promise<{ message: string }> {
+    const response = await apiClient.delete(`/students/${studentId}/delete-profile-image`);
+    return response.data;
+  }
+
   // Attendance
   async getAttendance(filters?: { date?: string; student_id?: number; class_name?: string }): Promise<any[]> {
     const params = new URLSearchParams();

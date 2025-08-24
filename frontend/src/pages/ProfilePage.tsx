@@ -289,7 +289,23 @@ const ProfilePage: React.FC = () => {
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={() => {
+                  setIsEditing(false);
+                  // Reset form to original user data
+                  if (user) {
+                    setProfileForm({
+                      first_name: user.first_name || '',
+                      last_name: user.last_name || '',
+                      email: user.email || '',
+                      phone: user.phone || '',
+                      username: user.username || '',
+                      employee_id: user.employee_id || '',
+                      department: user.department || '',
+                      hire_date: user.hire_date || ''
+                    });
+                  }
+                  setErrors({});
+                }}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
               >
                 <X className="h-4 w-4 mr-2" />
@@ -348,11 +364,12 @@ const ProfilePage: React.FC = () => {
                 <p>Member since {new Date(user.created_at).toLocaleDateString()}</p>
               </div>
               
-              {/* Profile Image Upload */}
+              {/* Profile Image Upload - Show in both edit and view modes for consistency */}
               <ProfileImageUpload
                 currentImageUrl={user.profile_image}
                 userId={user.id}
                 userName={user.full_name}
+                mode="edit"
                 onImageUpdate={(imageUrl) => {
                   // Update local state if needed
                   console.log('Profile image updated:', imageUrl);

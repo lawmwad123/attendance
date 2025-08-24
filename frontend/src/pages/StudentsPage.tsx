@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import Modal from '../components/ui/Modal';
+import ProfileImageUpload from '../components/ui/ProfileImageUpload';
 import { 
   Plus, 
   Search, 
@@ -39,6 +40,7 @@ interface Student {
   class_name?: string;
   section?: string;
   admission_date?: string;
+  profile_image?: string;
   status: 'active' | 'inactive' | 'graduated' | 'transferred';
   created_at: string;
 }
@@ -499,8 +501,20 @@ const StudentsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
-                          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <User className="h-6 w-6 text-indigo-600" />
+                          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden">
+                            {student.profile_image ? (
+                              <img
+                                src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${student.profile_image}`}
+                                alt={student.full_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <User className={`h-6 w-6 text-indigo-600 ${student.profile_image ? 'hidden' : ''}`} />
                           </div>
                         </div>
                         <div className="ml-4">
@@ -596,6 +610,20 @@ const StudentsPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {panelMode === 'view' && selectedStudent ? (
               <div className="p-6 space-y-8">
+                {/* Profile Image */}
+                <div className="text-center">
+                  <ProfileImageUpload
+                    currentImageUrl={selectedStudent.profile_image}
+                    userId={selectedStudent.id}
+                    userName={selectedStudent.full_name}
+                    type="student"
+                    mode="view"
+                    onImageUpdate={(imageUrl) => {
+                      console.log('Student profile image updated:', imageUrl);
+                    }}
+                  />
+                </div>
+                
                 {/* Personal Information */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
@@ -696,6 +724,25 @@ const StudentsPage: React.FC = () => {
             ) : (
               // Form for Add/Edit
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                {/* Profile Image Upload */}
+                <div className="text-center">
+                  <ProfileImageUpload
+                    currentImageUrl={panelMode === 'edit' ? selectedStudent?.profile_image : undefined}
+                    userId={panelMode === 'edit' ? selectedStudent?.id || 0 : 0}
+                    userName={panelMode === 'edit' ? selectedStudent?.full_name || '' : `${formData.first_name} ${formData.last_name}`.trim() || 'New Student'}
+                    type="student"
+                    mode={panelMode === 'edit' ? 'edit' : 'add'}
+                    onImageUpdate={(imageUrl) => {
+                      console.log('Student profile image updated:', imageUrl);
+                    }}
+                  />
+                  {panelMode === 'add' && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Upload image after saving the student
+                    </p>
+                  )}
+                </div>
+
                 {/* Personal Information Section */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>

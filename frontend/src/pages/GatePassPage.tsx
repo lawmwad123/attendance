@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import Modal from '../components/ui/Modal';
 import { 
   LogOut,
   LogIn,
@@ -18,7 +19,9 @@ import {
   Calendar,
   User,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Save,
+  Edit
 } from 'lucide-react';
 
 interface Student {
@@ -64,10 +67,12 @@ const GatePassPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showSlidePanel, setShowSlidePanel] = useState(false);
+  const [panelMode, setPanelMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedPass, setSelectedPass] = useState<GatePass | null>(null);
-  const [createForm, setCreateForm] = useState<CreateGatePassForm>({
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passToDelete, setPassToDelete] = useState<GatePass | null>(null);
+  const [formData, setFormData] = useState<CreateGatePassForm>({
     student_id: 0,
     type: 'exit',
     reason: '',
@@ -76,6 +81,13 @@ const GatePassPage: React.FC = () => {
   });
 
   const queryClient = useQueryClient();
+
+  // Cleanup effect to restore body scroll when component unmounts
+  React.useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   // Fetch students for pass creation
   const { data: students } = useQuery<Student[]>({
@@ -103,14 +115,35 @@ const GatePassPage: React.FC = () => {
     mutationFn: (passData: CreateGatePassForm) => api.createGatePass(passData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gatePasses'] });
-      setShowCreateModal(false);
+      setShowSlidePanel(false);
       resetForm();
+      toast.success('Gate pass created successfully!');
     },
     onError: (error: any) => {
       console.error('Error creating gate pass:', error);
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.message || 
                           'Failed to create gate pass. Please try again.';
+      toast.error(errorMessage);
+    },
+  });
+
+  // Update gate pass mutation
+  const updateGatePassMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateGatePassForm> }) => 
+      api.updateGatePass(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gatePasses'] });
+      setShowSlidePanel(false);
+      setSelectedPass(null);
+      resetForm();
+      toast.success('Gate pass updated successfully!');
+    },
+    onError: (error: any) => {
+      console.error('Error updating gate pass:', error);
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to update gate pass. Please try again.';
       toast.error(errorMessage);
     },
   });
@@ -122,9 +155,10 @@ const GatePassPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gatePasses'] });
       if (selectedPass) {
-        setShowDetailsModal(false);
+        setShowSlidePanel(false);
         setSelectedPass(null);
       }
+      toast.success('Gate pass approved successfully!');
     },
     onError: (error: any) => {
       console.error('Error approving gate pass:', error);
@@ -142,9 +176,10 @@ const GatePassPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gatePasses'] });
       if (selectedPass) {
-        setShowDetailsModal(false);
+        setShowSlidePanel(false);
         setSelectedPass(null);
       }
+      toast.success('Gate pass denied successfully!');
     },
     onError: (error: any) => {
       console.error('Error denying gate pass:', error);
@@ -155,8 +190,24 @@ const GatePassPage: React.FC = () => {
     },
   });
 
+  // Delete gate pass mutation
+  const deleteGatePassMutation = useMutation({
+    mutationFn: (id: number) => api.deleteGatePass(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gatePasses'] });
+      toast.success('Gate pass deleted successfully!');
+    },
+    onError: (error: any) => {
+      console.error('Error deleting gate pass:', error);
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to delete gate pass. Please try again.';
+      toast.error(errorMessage);
+    },
+  });
+
   const resetForm = () => {
-    setCreateForm({
+    setFormData({
       student_id: 0,
       type: 'exit',
       reason: '',
@@ -165,13 +216,70 @@ const GatePassPage: React.FC = () => {
     });
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleAddPass = () => {
+    setPanelMode('add');
+    resetForm();
+    setShowSlidePanel(true);
+    handleOpenPanel();
+  };
+
+  const handleEditPass = (pass: GatePass) => {
+    setSelectedPass(pass);
+    setFormData({
+      student_id: pass.student_id,
+      type: pass.type,
+      reason: pass.reason,
+      requested_time: pass.requested_time,
+      notes: pass.notes || '',
+    });
+    setPanelMode('edit');
+    setShowSlidePanel(true);
+    handleOpenPanel();
+  };
+
+  const handleViewPass = (pass: GatePass) => {
+    setSelectedPass(pass);
+    setPanelMode('view');
+    setShowSlidePanel(true);
+    handleOpenPanel();
+  };
+
+  const handleDeletePass = (pass: GatePass) => {
+    setPassToDelete(pass);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeletePass = () => {
+    if (passToDelete) {
+      deleteGatePassMutation.mutate(passToDelete.id);
+      setPassToDelete(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.student_id || !createForm.reason || !createForm.requested_time) {
-      toast.error('Please fill in all required fields');
+    
+    // Validate required fields
+    if (!formData.student_id) {
+      toast.error('Please select a student');
       return;
     }
-    createGatePassMutation.mutate(createForm);
+    
+    if (!formData.reason.trim()) {
+      toast.error('Reason is required');
+      return;
+    }
+    
+    if (!formData.requested_time) {
+      toast.error('Requested time is required');
+      return;
+    }
+    
+    if (panelMode === 'edit' && selectedPass) {
+      updateGatePassMutation.mutate({ id: selectedPass.id, data: formData });
+    } else {
+      createGatePassMutation.mutate(formData);
+    }
   };
 
   const handleApprove = (pass: GatePass) => {
@@ -184,6 +292,19 @@ const GatePassPage: React.FC = () => {
     if (notes) {
       denyGatePassMutation.mutate({ id: pass.id, notes });
     }
+  };
+
+  const handleClosePanel = () => {
+    setShowSlidePanel(false);
+    setSelectedPass(null);
+    resetForm();
+    // Re-enable body scroll when panel closes
+    document.body.style.overflow = 'auto';
+  };
+
+  const handleOpenPanel = () => {
+    // Disable body scroll when panel opens
+    document.body.style.overflow = 'hidden';
   };
 
   const filteredPasses = gatePasses?.filter(pass => {
@@ -211,20 +332,14 @@ const GatePassPage: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'badge-success';
-      case 'denied':
-        return 'badge-danger';
-      case 'pending':
-        return 'badge-warning';
-      case 'used':
-        return 'badge-primary';
-      case 'expired':
-        return 'badge-secondary';
-      default:
-        return 'badge-secondary';
-    }
+    const statusClasses: Record<string, string> = {
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      denied: 'bg-red-100 text-red-800 border-red-200',
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      used: 'bg-blue-100 text-blue-800 border-blue-200',
+      expired: 'bg-gray-100 text-gray-800 border-gray-200',
+    };
+    return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
   const getTypeIcon = (type: string) => {
@@ -240,37 +355,45 @@ const GatePassPage: React.FC = () => {
     }
   };
 
-  // Stats calculations
-  const stats = {
-    total: filteredPasses.length,
-    pending: filteredPasses.filter(p => p.status === 'pending').length,
-    approved: filteredPasses.filter(p => p.status === 'approved').length,
-    denied: filteredPasses.filter(p => p.status === 'denied').length,
-    used: filteredPasses.filter(p => p.status === 'used').length,
+  const getPanelTitle = () => {
+    switch (panelMode) {
+      case 'add': return 'Create New Gate Pass';
+      case 'edit': return 'Edit Gate Pass';
+      case 'view': return 'Gate Pass Details';
+      default: return 'Gate Pass';
+    }
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center text-red-600">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              <span>Error loading gate passes data: {(error as Error).message}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
+        <div>
           <h1 className="text-2xl font-bold text-secondary-900">Gate Pass Management</h1>
-        <p className="text-secondary-600">Manage student exit and entry permissions</p>
+          <p className="text-secondary-600">Manage student exit and entry permissions</p>
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary flex items-center"
+            onClick={handleAddPass}
+            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-5 w-5 mr-2" />
             New Pass
-          </button>
-          <button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['gatePasses'] })}
-            className="btn-secondary flex items-center"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
           </button>
         </div>
       </div>
@@ -284,7 +407,7 @@ const GatePassPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-secondary-600">Total</p>
-              <p className="text-xl font-bold text-secondary-900">{stats.total}</p>
+              <p className="text-xl font-bold text-secondary-900">{filteredPasses.length}</p>
             </div>
           </div>
         </div>
@@ -296,7 +419,9 @@ const GatePassPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-secondary-600">Pending</p>
-              <p className="text-xl font-bold text-warning-600">{stats.pending}</p>
+              <p className="text-xl font-bold text-warning-600">
+                {filteredPasses.filter(p => p.status === 'pending').length}
+              </p>
             </div>
           </div>
         </div>
@@ -308,7 +433,9 @@ const GatePassPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-secondary-600">Approved</p>
-              <p className="text-xl font-bold text-success-600">{stats.approved}</p>
+              <p className="text-xl font-bold text-success-600">
+                {filteredPasses.filter(p => p.status === 'approved').length}
+              </p>
             </div>
           </div>
         </div>
@@ -320,7 +447,9 @@ const GatePassPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-secondary-600">Denied</p>
-              <p className="text-xl font-bold text-danger-600">{stats.denied}</p>
+              <p className="text-xl font-bold text-danger-600">
+                {filteredPasses.filter(p => p.status === 'denied').length}
+              </p>
             </div>
           </div>
         </div>
@@ -332,7 +461,9 @@ const GatePassPage: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-secondary-600">Used</p>
-              <p className="text-xl font-bold text-secondary-900">{stats.used}</p>
+              <p className="text-xl font-bold text-secondary-900">
+                {filteredPasses.filter(p => p.status === 'used').length}
+              </p>
             </div>
           </div>
         </div>
@@ -409,31 +540,41 @@ const GatePassPage: React.FC = () => {
       {/* Gate Passes Table */}
       <div className="card">
         <div className="p-6 border-b border-secondary-200">
-          <h2 className="text-lg font-semibold text-secondary-900">Gate Pass Requests</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-secondary-900">
+              Gate Pass Requests ({filteredPasses.length})
+            </h2>
+            <button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['gatePasses'] })}
+              className="btn-ghost flex items-center"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="text-secondary-600 mt-2">Loading gate passes...</p>
-          </div>
-        ) : error ? (
-          <div className="p-6 text-center">
-            <div className="flex items-center justify-center text-danger-600 mb-4">
-              <AlertTriangle className="h-5 w-5 mr-2" />
-              <span>Error loading gate passes data: {(error as Error).message}</span>
-            </div>
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-secondary-600">Loading gate passes...</p>
           </div>
         ) : filteredPasses.length === 0 ? (
-          <div className="p-6 text-center">
-            <FileText className="h-12 w-12 text-secondary-400 mx-auto mb-4" />
+          <div className="p-12 text-center">
+            <FileText className="h-16 w-16 text-secondary-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-secondary-900 mb-2">No gate passes found</h3>
-            <p className="text-secondary-600">
+            <p className="text-secondary-600 mb-6">
               {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
                 ? 'Try adjusting your search or filter criteria.'
-                : 'No gate pass requests available.'
+                : 'Get started by creating your first gate pass.'
               }
             </p>
+            {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+              <button onClick={handleAddPass} className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Pass
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -462,7 +603,7 @@ const GatePassPage: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-secondary-200">
                 {filteredPasses.map((pass) => (
-                  <tr key={pass.id} className="hover:bg-secondary-50">
+                  <tr key={pass.id} className="hover:bg-secondary-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-secondary-900">
@@ -494,7 +635,7 @@ const GatePassPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {getStatusIcon(pass.status)}
-                        <span className={`badge ${getStatusBadge(pass.status)} ml-2`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getStatusBadge(pass.status)}`}>
                           {pass.status}
                         </span>
                       </div>
@@ -502,21 +643,25 @@ const GatePassPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => {
-                            setSelectedPass(pass);
-                            setShowDetailsModal(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-900"
+                          onClick={() => handleViewPass(pass)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditPass(pass)}
+                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
+                          title="Edit Pass"
+                        >
+                          <Edit className="h-4 w-4" />
                         </button>
                         {pass.status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(pass)}
                               disabled={approveGatePassMutation.isPending}
-                              className="text-success-600 hover:text-success-900"
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors"
                               title="Approve"
                             >
                               <Check className="h-4 w-4" />
@@ -524,13 +669,21 @@ const GatePassPage: React.FC = () => {
                             <button
                               onClick={() => handleDeny(pass)}
                               disabled={denyGatePassMutation.isPending}
-                              className="text-danger-600 hover:text-danger-900"
+                              className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
                               title="Deny"
                             >
                               <X className="h-4 w-4" />
                             </button>
                           </>
                         )}
+                        <button
+                          onClick={() => handleDeletePass(pass)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete Pass"
+                          disabled={deleteGatePassMutation.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -541,274 +694,255 @@ const GatePassPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create Gate Pass Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-secondary-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-secondary-900">Create Gate Pass</h2>
+      {/* Right Slide Panel */}
+      <div className={`fixed inset-y-0 right-0 z-50 w-full max-w-md transform transition-transform duration-300 ease-in-out ${
+        showSlidePanel ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex h-full flex-col bg-white shadow-xl">
+          {/* Panel Header */}
+          <div className="bg-indigo-600 px-6 py-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-white">
+                {getPanelTitle()}
+              </h2>
+              <button
+                onClick={handleClosePanel}
+                className="text-indigo-200 hover:text-white transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Panel Content */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {panelMode === 'view' && selectedPass ? (
+              <div className="p-6 space-y-8">
+                {/* Student Information */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Student Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Student Name</label>
+                      <p className="text-gray-900">{selectedPass.student.full_name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Student ID</label>
+                      <p className="text-gray-900">{selectedPass.student.student_id}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Class</label>
+                      <p className="text-gray-900">
+                        {selectedPass.student.class_name} - {selectedPass.student.section}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pass Details */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Pass Details</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Type</label>
+                      <div className="flex items-center mt-1">
+                        {getTypeIcon(selectedPass.type)}
+                        <span className="ml-2 text-gray-900">
+                          {selectedPass.type.charAt(0).toUpperCase() + selectedPass.type.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Status</label>
+                      <div className="flex items-center mt-1">
+                        {getStatusIcon(selectedPass.status)}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getStatusBadge(selectedPass.status)}`}>
+                          {selectedPass.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Requested Time</label>
+                      <p className="text-gray-900">
+                        {new Date(selectedPass.requested_time).toLocaleString()}
+                      </p>
+                    </div>
+                    {selectedPass.approved_time && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Approved Time</label>
+                        <p className="text-gray-900">
+                          {new Date(selectedPass.approved_time).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Reason</label>
+                      <p className="text-gray-900">{selectedPass.reason}</p>
+                    </div>
+                    {selectedPass.notes && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Notes</label>
+                        <p className="text-gray-900">{selectedPass.notes}</p>
+                      </div>
+                    )}
+                    {selectedPass.approved_by && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Approved By</label>
+                        <p className="text-gray-900">{selectedPass.approved_by}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Form for Add/Edit
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                {/* Student Selection */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Student Information</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      value={formData.student_id}
+                      onChange={(e) => setFormData({ ...formData, student_id: parseInt(e.target.value) })}
+                      required
+                    >
+                      <option value={0}>Select a student</option>
+                      {students?.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {student.full_name} ({student.student_id}) - {student.class_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Pass Details */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Pass Details</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        value={formData.type}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                        required
+                      >
+                        <option value="exit">Exit</option>
+                        <option value="entry">Entry</option>
+                        <option value="temporary">Temporary</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Requested Time *</label>
+                      <input
+                        type="datetime-local"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        value={formData.requested_time}
+                        onChange={(e) => setFormData({ ...formData, requested_time: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                      <textarea
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows={3}
+                        placeholder="Enter the reason for gate pass..."
+                        value={formData.reason}
+                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <textarea
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows={2}
+                        placeholder="Additional notes (optional)..."
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+
+          {/* Panel Footer */}
+          {panelMode === 'view' && selectedPass ? (
+            <div className="border-t border-gray-200 px-6 py-4">
+              <div className="flex space-x-3">
                 <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                  className="text-secondary-400 hover:text-secondary-600"
+                  onClick={() => handleEditPass(selectedPass)}
+                  className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  <X className="h-6 w-6" />
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Pass
                 </button>
               </div>
             </div>
-
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="label">Student *</label>
-                <select
-                  className="input"
-                  value={createForm.student_id}
-                  onChange={(e) => setCreateForm({ ...createForm, student_id: parseInt(e.target.value) })}
-                  required
-                >
-                  <option value={0}>Select a student</option>
-                  {students?.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.full_name} ({student.student_id}) - {student.class_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="label">Type *</label>
-                <select
-                  className="input"
-                  value={createForm.type}
-                  onChange={(e) => setCreateForm({ ...createForm, type: e.target.value as any })}
-                  required
-                >
-                  <option value="exit">Exit</option>
-                  <option value="entry">Entry</option>
-                  <option value="temporary">Temporary</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="label">Requested Time *</label>
-                <input
-                  type="datetime-local"
-                  className="input"
-                  value={createForm.requested_time}
-                  onChange={(e) => setCreateForm({ ...createForm, requested_time: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Reason *</label>
-                <textarea
-                  className="input"
-                  rows={3}
-                  placeholder="Enter the reason for gate pass..."
-                  value={createForm.reason}
-                  onChange={(e) => setCreateForm({ ...createForm, reason: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Notes</label>
-                <textarea
-                  className="input"
-                  rows={2}
-                  placeholder="Additional notes (optional)..."
-                  value={createForm.notes}
-                  onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
+          ) : (
+            <div className="border-t border-gray-200 px-6 py-4">
+              <div className="flex space-x-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                  className="btn-secondary"
+                  onClick={handleClosePanel}
+                  className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  disabled={createGatePassMutation.isPending}
-                  className="btn-primary flex items-center"
+                  onClick={handleSubmit}
+                  disabled={createGatePassMutation.isPending || updateGatePassMutation.isPending}
+                  className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
-                  {createGatePassMutation.isPending ? (
+                  {(createGatePassMutation.isPending || updateGatePassMutation.isPending) ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating...
+                      Saving...
                     </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Pass
+                      <Save className="h-4 w-4 mr-2" />
+                      {panelMode === 'edit' ? 'Update Pass' : 'Create Pass'}
                     </>
                   )}
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Backdrop */}
+      {showSlidePanel && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={handleClosePanel}
+        />
       )}
 
-      {/* Gate Pass Details Modal */}
-      {showDetailsModal && selectedPass && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-secondary-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-secondary-900">Gate Pass Details</h2>
-                <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    setSelectedPass(null);
-                  }}
-                  className="text-secondary-400 hover:text-secondary-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Student Info */}
-              <div>
-                <h3 className="text-lg font-medium text-secondary-900 mb-3">Student Information</h3>
-                <div className="bg-secondary-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-secondary-600">Name:</span>
-                    <span className="text-sm font-medium text-secondary-900">
-                      {selectedPass.student.full_name}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-secondary-600">Student ID:</span>
-                    <span className="text-sm font-medium text-secondary-900">
-                      {selectedPass.student.student_id}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-secondary-600">Class:</span>
-                    <span className="text-sm font-medium text-secondary-900">
-                      {selectedPass.student.class_name} - {selectedPass.student.section}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pass Details */}
-              <div>
-                <h3 className="text-lg font-medium text-secondary-900 mb-3">Pass Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-secondary-600">Type:</span>
-                    <div className="flex items-center">
-                      {getTypeIcon(selectedPass.type)}
-                      <span className="ml-2 text-sm font-medium text-secondary-900">
-                        {selectedPass.type.charAt(0).toUpperCase() + selectedPass.type.slice(1)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-secondary-600">Status:</span>
-                    <div className="flex items-center">
-                      {getStatusIcon(selectedPass.status)}
-                      <span className={`badge ${getStatusBadge(selectedPass.status)} ml-2`}>
-                        {selectedPass.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-secondary-600">Requested Time:</span>
-                    <span className="text-sm font-medium text-secondary-900">
-                      {new Date(selectedPass.requested_time).toLocaleString()}
-                    </span>
-                  </div>
-                  {selectedPass.approved_time && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-secondary-600">Approved Time:</span>
-                      <span className="text-sm font-medium text-secondary-900">
-                        {new Date(selectedPass.approved_time).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-sm text-secondary-600">Reason:</span>
-                    <span className="text-sm font-medium text-secondary-900 text-right max-w-xs">
-                      {selectedPass.reason}
-                    </span>
-                  </div>
-                  {selectedPass.notes && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-secondary-600">Notes:</span>
-                      <span className="text-sm font-medium text-secondary-900 text-right max-w-xs">
-                        {selectedPass.notes}
-                      </span>
-                    </div>
-                  )}
-                  {selectedPass.approved_by && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-secondary-600">Approved By:</span>
-                      <span className="text-sm font-medium text-secondary-900">
-                        {selectedPass.approved_by}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              {selectedPass.status === 'pending' && (
-                <div className="flex justify-end space-x-3 pt-4 border-t border-secondary-200">
-                  <button
-                    onClick={() => handleDeny(selectedPass)}
-                    disabled={denyGatePassMutation.isPending}
-                    className="btn-danger flex items-center"
-                  >
-                    {denyGatePassMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Denying...
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-2" />
-                        Deny
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleApprove(selectedPass)}
-                    disabled={approveGatePassMutation.isPending}
-                    className="btn-success flex items-center"
-                  >
-                    {approveGatePassMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Approving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Approve
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setPassToDelete(null);
+        }}
+        onConfirm={confirmDeletePass}
+        title="Delete Gate Pass"
+        message={`Are you sure you want to delete this gate pass for ${passToDelete?.student.full_name}? This action cannot be undone.`}
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

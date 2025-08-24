@@ -19,13 +19,17 @@ interface ProfileImageUploadProps {
   userId: number;
   userName: string;
   onImageUpdate?: (imageUrl: string) => void;
+  type?: 'user' | 'student';
+  mode?: 'view' | 'edit' | 'add';
 }
 
 const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   currentImageUrl,
   userId,
   userName,
-  onImageUpdate
+  onImageUpdate,
+  type = 'user',
+  mode = 'edit'
 }) => {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
@@ -46,26 +50,41 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
   // Upload image mutation
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => api.uploadProfileImage(file),
+    mutationFn: (file: File) => {
+      if (type === 'student') {
+        // For new students (userId = 0), we can't upload yet
+        if (userId === 0) {
+          throw new Error('Please save the student first, then upload an image.');
+        }
+        return api.uploadStudentProfileImage(userId, file);
+      } else {
+        return api.uploadProfileImage(file);
+      }
+    },
     onSuccess: async (data) => {
       console.log('Upload success data:', data);
       toast.success('Profile image uploaded successfully!');
       setPreviewUrl(null);
       
-      // Refresh user data from backend
-      try {
-        const updatedUser = await api.getCurrentUser();
-        console.log('Updated user data:', updatedUser);
+      if (type === 'user') {
+        // Refresh user data from backend
+        try {
+          const updatedUser = await api.getCurrentUser();
+          console.log('Updated user data:', updatedUser);
+          
+          // Update user in Redux store
+          dispatch(updateUser(updatedUser));
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
         
-        // Update user in Redux store
-        dispatch(updateUser(updatedUser));
-      } catch (error) {
-        console.error('Error refreshing user data:', error);
+        // Invalidate queries
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        queryClient.invalidateQueries({ queryKey: ['auth'] });
+      } else {
+        // Invalidate student queries
+        queryClient.invalidateQueries({ queryKey: ['students'] });
       }
-      
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['auth'] });
       
       // Call callback if provided
       if (onImageUpdate) {
@@ -74,7 +93,8 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     },
     onError: (error: any) => {
       console.error('Error uploading image:', error);
-      const errorMessage = error.response?.data?.detail || 
+      const errorMessage = error.message || 
+                          error.response?.data?.detail || 
                           error.response?.data?.message || 
                           'Failed to upload image. Please try again.';
       toast.error(errorMessage);
@@ -84,24 +104,39 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
   // Delete image mutation
   const deleteMutation = useMutation({
-    mutationFn: () => api.deleteProfileImage(),
+    mutationFn: () => {
+      if (type === 'student') {
+        // For new students (userId = 0), we can't delete yet
+        if (userId === 0) {
+          throw new Error('Please save the student first, then delete the image.');
+        }
+        return api.deleteStudentProfileImage(userId);
+      } else {
+        return api.deleteProfileImage();
+      }
+    },
     onSuccess: async () => {
       toast.success('Profile image deleted successfully!');
       
-      // Refresh user data from backend
-      try {
-        const updatedUser = await api.getCurrentUser();
-        console.log('Updated user data after delete:', updatedUser);
+      if (type === 'user') {
+        // Refresh user data from backend
+        try {
+          const updatedUser = await api.getCurrentUser();
+          console.log('Updated user data after delete:', updatedUser);
+          
+          // Update user in Redux store
+          dispatch(updateUser(updatedUser));
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
         
-        // Update user in Redux store
-        dispatch(updateUser(updatedUser));
-      } catch (error) {
-        console.error('Error refreshing user data:', error);
+        // Invalidate queries
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        queryClient.invalidateQueries({ queryKey: ['auth'] });
+      } else {
+        // Invalidate student queries
+        queryClient.invalidateQueries({ queryKey: ['students'] });
       }
-      
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['auth'] });
       
       // Call callback if provided
       if (onImageUpdate) {
@@ -177,16 +212,28 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   };
 
   const getImageUrl = () => {
-    // Use user data from Redux if available, otherwise fall back to prop
-    const imagePath = user?.profile_image || currentImageUrl;
+    // Priority: previewUrl > type-specific image > null
+    if (previewUrl) return previewUrl;
+    
+    let imagePath: string | undefined;
+    
+    if (type === 'user') {
+      // For users, use Redux state
+      imagePath = user?.profile_image;
+    } else {
+      // For students, use the prop
+      imagePath = currentImageUrl;
+    }
+    
     console.log('getImageUrl called:', { 
       previewUrl, 
       imagePath, 
       userProfileImage: user?.profile_image,
       currentImageUrl,
+      type,
       fullUser: user 
     });
-    if (previewUrl) return previewUrl;
+    
     if (imagePath) {
       // Use the static file serving URL
       const imageUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${imagePath}`;
@@ -202,7 +249,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center space-y-4" onClick={(e) => e.stopPropagation()}>
       {/* Profile Image Display */}
       <div className="relative">
         <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-lg">
@@ -226,66 +273,85 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
           </div>
         </div>
 
-        {/* Upload/Delete buttons */}
-        <div className="absolute -bottom-2 -right-2 flex space-x-2">
-          {/* Upload button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadMutation.isPending}
-            className="p-2 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-            title="Upload new image"
-          >
-            {uploadMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Camera className="h-4 w-4" />
-            )}
-          </button>
-
-          {/* Delete button */}
-          {(user?.profile_image || currentImageUrl) && (
+        {/* Upload/Delete buttons - Only show in edit and add modes */}
+        {(mode === 'edit' || mode === 'add') && (
+          <div className="absolute -bottom-2 -right-2 flex space-x-2">
+            {/* Upload button */}
             <button
-              onClick={handleDeleteImage}
-              disabled={deleteMutation.isPending}
-              className="p-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-              title="Delete image"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              disabled={uploadMutation.isPending}
+              className="p-2 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+              title="Upload new image"
             >
-              {deleteMutation.isPending ? (
+              {uploadMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-4 w-4" />
+                <Camera className="h-4 w-4" />
               )}
             </button>
-          )}
-        </div>
+
+            {/* Delete button - Only show in edit mode */}
+            {mode === 'edit' && getImageUrl() && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDeleteImage();
+                }}
+                disabled={deleteMutation.isPending}
+                className="p-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                title="Delete image"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Upload Area */}
-      <div
-        className={`w-full max-w-md p-6 border-2 border-dashed rounded-lg text-center transition-colors ${
-          isDragging
-            ? 'border-indigo-400 bg-indigo-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-sm text-gray-600 mb-2">
-          Drag and drop an image here, or{' '}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
-          >
-            browse
-          </button>
-        </p>
-        <p className="text-xs text-gray-500">
-          Supports JPEG, PNG, WebP • Max 5MB
-        </p>
-      </div>
+      {/* Upload Area - Only show in edit mode */}
+      {mode === 'edit' && (
+        <div
+          className={`w-full max-w-md p-6 border-2 border-dashed rounded-lg text-center transition-colors ${
+            isDragging
+              ? 'border-indigo-400 bg-indigo-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 mb-2">
+            Drag and drop an image here, or{' '}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              browse
+            </button>
+          </p>
+          <p className="text-xs text-gray-500">
+            Supports JPEG, PNG, WebP • Max 5MB
+          </p>
+        </div>
+      )}
 
       {/* Hidden file input */}
       <input
