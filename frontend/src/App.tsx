@@ -14,7 +14,11 @@ import PublicLayout from './components/layouts/PublicLayout';
 import DashboardLayout from './components/layouts/DashboardLayout';
 
 // Pages
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import StudentsPage from './pages/StudentsPage';
@@ -68,21 +72,24 @@ const AppRoutes: React.FC = () => {
     <Router>
       <Routes>
         {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        
         <Route path="/login" element={
           <PublicLayout>
             <LoginPage />
           </PublicLayout>
         } />
-
-        {/* Protected routes */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <DashboardPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+        
+        <Route path="/register" element={
+          <PublicLayout>
+            <RegisterPage />
+          </PublicLayout>
         } />
         
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+
+        {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardLayout>

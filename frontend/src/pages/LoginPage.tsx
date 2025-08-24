@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { loginUser } from '../store/slices/authSlice';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   Shield, 
@@ -16,10 +16,11 @@ import {
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+  const [schoolSlug, setSchoolSlug] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ schoolSlug?: string; email?: string; password?: string }>({});
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -27,7 +28,11 @@ const LoginPage: React.FC = () => {
   }
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { schoolSlug?: string; email?: string; password?: string } = {};
+    
+    if (!schoolSlug.trim()) {
+      newErrors.schoolSlug = 'School URL is required';
+    }
     
     if (!email.trim()) {
       newErrors.email = 'Email is required';
@@ -52,6 +57,10 @@ const LoginPage: React.FC = () => {
       return;
     }
     
+    // Set the tenant ID for the login request
+    const { setTenantId } = await import('../lib/api');
+    setTenantId(schoolSlug);
+    
     const result = await dispatch(loginUser({ email, password }));
     
     if (loginUser.rejected.match(result)) {
@@ -61,8 +70,10 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleInputChange = (field: 'email' | 'password', value: string) => {
-    if (field === 'email') {
+  const handleInputChange = (field: 'schoolSlug' | 'email' | 'password', value: string) => {
+    if (field === 'schoolSlug') {
+      setSchoolSlug(value);
+    } else if (field === 'email') {
       setEmail(value);
     } else {
       setPassword(value);
@@ -95,6 +106,38 @@ const LoginPage: React.FC = () => {
         {/* Login Form Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* School URL Field */}
+            <div>
+              <label htmlFor="schoolSlug" className="block text-sm font-medium text-gray-700 mb-2">
+                School URL
+              </label>
+              <div className="relative">
+                <input
+                  id="schoolSlug"
+                  name="schoolSlug"
+                  type="text"
+                  required
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                    errors.schoolSlug 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  placeholder="demo-school"
+                  value={schoolSlug}
+                  onChange={(e) => handleInputChange('schoolSlug', e.target.value)}
+                />
+                <div className="absolute right-3 top-3 text-gray-400 text-sm">
+                  .attendly.com
+                </div>
+                {errors.schoolSlug && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.schoolSlug}
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -189,10 +232,21 @@ const LoginPage: React.FC = () => {
             <div className="text-center">
               <p className="text-sm font-medium text-gray-700 mb-1">Demo Credentials</p>
               <div className="text-xs text-gray-600 space-y-1">
+                <p><span className="font-medium">School URL:</span> demo</p>
                 <p><span className="font-medium">Email:</span> admin@demo-school.com</p>
                 <p><span className="font-medium">Password:</span> admin123</p>
               </div>
             </div>
+          </div>
+
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have a school account?{' '}
+              <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-700">
+                Register your school
+              </Link>
+            </p>
           </div>
         </div>
 
