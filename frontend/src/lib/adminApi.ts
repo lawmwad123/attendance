@@ -156,7 +156,10 @@ adminApiClient.interceptors.response.use(
       // Clear admin token and redirect to admin login
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      window.location.href = '/admin/login';
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/admin/login') {
+        window.location.href = '/admin/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -200,7 +203,7 @@ class AdminApiClient {
       });
     }
     
-    const response = await adminApiClient.get<SuperAdmin[]>(`/admins/?${params.toString()}`);
+    const response = await adminApiClient.get<SuperAdmin[]>(`/admins?${params.toString()}`);
     return response.data;
   }
 
@@ -230,7 +233,7 @@ class AdminApiClient {
       });
     }
     
-    const response = await adminApiClient.get<SchoolSummary[]>(`/schools/?${params.toString()}`);
+    const response = await adminApiClient.get<SchoolSummary[]>(`/schools?${params.toString()}`);
     return response.data;
   }
 
@@ -255,7 +258,7 @@ class AdminApiClient {
       });
     }
     
-    const response = await adminApiClient.get<SupportTicket[]>(`/support-tickets/?${params.toString()}`);
+    const response = await adminApiClient.get<SupportTicket[]>(`/support-tickets?${params.toString()}`);
     return response.data;
   }
 
@@ -297,7 +300,7 @@ class AdminApiClient {
       });
     }
     
-    const response = await adminApiClient.get<SystemLog[]>(`/logs/?${params.toString()}`);
+    const response = await adminApiClient.get<SystemLog[]>(`/logs?${params.toString()}`);
     return response.data;
   }
 
@@ -312,7 +315,7 @@ class AdminApiClient {
       });
     }
     
-    const response = await adminApiClient.get<AdminActionLog[]>(`/admin-actions/?${params.toString()}`);
+    const response = await adminApiClient.get<AdminActionLog[]>(`/admin-actions?${params.toString()}`);
     return response.data;
   }
 

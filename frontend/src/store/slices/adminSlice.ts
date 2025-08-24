@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { adminApi, setAdminToken, removeAdminToken } from '../../lib/adminApi';
 
 // Types
@@ -124,6 +125,31 @@ export const getCurrentAdmin = createAsyncThunk(
   }
 );
 
+// Initialize admin state from localStorage
+export const initializeAdminAuth = createAsyncThunk(
+  'admin/initializeAuth',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const adminUser = localStorage.getItem('admin_user');
+      
+      if (!token || !adminUser) {
+        // No token or user data, not authenticated
+        return null;
+      }
+      
+      // Verify token is still valid by making a request
+      const admin = await adminApi.getCurrentAdmin();
+      return admin;
+    } catch (error: any) {
+      // Clear invalid tokens
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      return rejectWithValue('Invalid or expired token');
+    }
+  }
+);
+
 export const getSystemStats = createAsyncThunk(
   'admin/getSystemStats',
   async (_, { rejectWithValue }) => {
@@ -138,7 +164,7 @@ export const getSystemStats = createAsyncThunk(
 
 export const getSchoolsSummary = createAsyncThunk(
   'admin/getSchoolsSummary',
-  async (filters?: { is_active?: boolean }, { rejectWithValue }) => {
+  async (filters: { is_active?: boolean } = {}, { rejectWithValue }) => {
     try {
       const schools = await adminApi.getSchoolsSummary(filters);
       return schools;
@@ -150,7 +176,7 @@ export const getSchoolsSummary = createAsyncThunk(
 
 export const getSupportTickets = createAsyncThunk(
   'admin/getSupportTickets',
-  async (filters?: { status?: string; priority?: string }, { rejectWithValue }) => {
+  async (filters: { status?: string; priority?: string } = {}, { rejectWithValue }) => {
     try {
       const tickets = await adminApi.getSupportTickets(filters);
       return tickets;
@@ -242,6 +268,23 @@ const adminSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.admin = null;
+      });
+
+    // Initialize admin auth
+    builder
+      .addCase(initializeAdminAuth.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(initializeAdminAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.admin = action.payload;
+      })
+      .addCase(initializeAdminAuth.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.admin = null;
+        state.error = action.payload as string;
       });
 
     // Get system stats

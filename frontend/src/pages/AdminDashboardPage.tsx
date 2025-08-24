@@ -19,11 +19,11 @@ const AdminDashboardPage: React.FC = () => {
   const { systemStats, schoolsSummary, supportTickets, isLoading } = useAppSelector((state) => state.admin);
 
   useEffect(() => {
-    // Load dashboard data
+    // Load dashboard data only once when component mounts
     dispatch(getSystemStats());
     dispatch(getSchoolsSummary());
     dispatch(getSupportTickets({ status: 'OPEN' }));
-  }, [dispatch]);
+  }, [dispatch]); // Add dispatch as dependency
 
   const stats = [
     {

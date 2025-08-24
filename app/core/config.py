@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5174,http://localhost:5174"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5174,http://127.0.0.1:5174"
     ALLOWED_HOSTS: List[str] = ["*"]  # Configure for production
     
     # Frontend URL for email links

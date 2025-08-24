@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from './hooks/redux';
 import { initializeAuth } from './store/slices/authSlice';
 import { setTenantId } from './store/slices/appSlice';
 import { getTenantId } from './lib/api';
-import { getCurrentAdmin } from './store/slices/adminSlice';
+import { initializeAdminAuth } from './store/slices/adminSlice';
 
 // Layout components
 import PublicLayout from './components/layouts/PublicLayout';
@@ -84,14 +84,14 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
     dispatch(initializeAuth());
 
     // Initialize admin auth state from localStorage
-    dispatch(getCurrentAdmin());
+    dispatch(initializeAdminAuth());
 
     // Set tenant ID from URL or localStorage
     const tenantId = getTenantId();
     if (tenantId) {
       dispatch(setTenantId(tenantId));
     }
-  }, [dispatch]);
+  }, []); // Empty dependency array to run only once
 
   return <>{children}</>;
 };

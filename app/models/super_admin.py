@@ -4,7 +4,8 @@ from sqlalchemy.sql import func
 from enum import Enum
 from datetime import datetime
 
-from app.models.base import BaseModel
+from app.core.database import Base
+from app.models.base import TimestampMixin
 
 
 class SuperAdminRole(str, Enum):
@@ -46,7 +47,16 @@ class SupportTicketPriority(str, Enum):
     URGENT = "URGENT"
 
 
-class SuperAdmin(BaseModel):
+class SuperAdminBase(Base, TimestampMixin):
+    """
+    Base model for super admin models (not tenant-specific).
+    """
+    __abstract__ = True
+    
+    id = Column(Integer, primary_key=True, index=True)
+
+
+class SuperAdmin(SuperAdminBase):
     """
     Super admin model for system-wide administration.
     """
@@ -96,7 +106,7 @@ class SuperAdmin(BaseModel):
         return f"<SuperAdmin(email='{self.email}', role='{self.role}')>"
 
 
-class SystemLog(BaseModel):
+class SystemLog(SuperAdminBase):
     """
     System-wide activity logs.
     """
@@ -121,7 +131,7 @@ class SystemLog(BaseModel):
         return f"<SystemLog(level='{self.level}', message='{self.message[:50]}...')>"
 
 
-class SupportTicket(BaseModel):
+class SupportTicket(SuperAdminBase):
     """
     Support tickets from schools.
     """
@@ -156,7 +166,7 @@ class SupportTicket(BaseModel):
         return f"<SupportTicket(number='{self.ticket_number}', subject='{self.subject}')>"
 
 
-class AdminActionLog(BaseModel):
+class AdminActionLog(SuperAdminBase):
     """
     Log of all admin actions for audit trail.
     """
@@ -183,7 +193,7 @@ class AdminActionLog(BaseModel):
         return f"<AdminActionLog(action='{self.action}', admin='{self.admin_email}')>"
 
 
-class SystemConfiguration(BaseModel):
+class SystemConfiguration(SuperAdminBase):
     """
     System-wide configuration settings.
     """
@@ -203,7 +213,7 @@ class SystemConfiguration(BaseModel):
         return f"<SystemConfiguration(key='{self.key}', value='{self.value}')>"
 
 
-class SystemAnnouncement(BaseModel):
+class SystemAnnouncement(SuperAdminBase):
     """
     System-wide announcements to schools.
     """
@@ -229,7 +239,7 @@ class SystemAnnouncement(BaseModel):
         return f"<SystemAnnouncement(title='{self.title}', active={self.is_active})>"
 
 
-class FeatureFlag(BaseModel):
+class FeatureFlag(SuperAdminBase):
     """
     Feature flags for controlling system features.
     """

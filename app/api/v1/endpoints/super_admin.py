@@ -7,7 +7,7 @@ import uuid
 import json
 
 from app.api.deps import get_db
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, verify_token
 from app.core.config import settings
 from app.models.super_admin import (
     SuperAdmin, SuperAdminRole, SuperAdminStatus, SystemLog, SystemLogLevel,
@@ -46,21 +46,42 @@ async def get_current_super_admin(
         
         token = auth_header.split(" ")[1]
         
-        # Verify token and get admin
-        # This is a simplified version - you should implement proper JWT verification
-        # For now, we'll use a simple approach
-        stmt = select(SuperAdmin).where(SuperAdmin.is_active == True)
+        # Verify JWT token
+        payload = verify_token(token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+        
+        # Check if this is a super admin token
+        if payload.get("role") != "super_admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Super admin privileges required."
+            )
+        
+        # Get admin by ID from token
+        admin_id = int(payload.get("sub"))
+        stmt = select(SuperAdmin).where(
+            and_(
+                SuperAdmin.id == admin_id,
+                SuperAdmin.is_active == True
+            )
+        )
         result = await db.execute(stmt)
         admin = result.scalar_one_or_none()
         
         if not admin:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials"
+                detail="Admin not found or inactive"
             )
         
         return admin
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -149,10 +170,12 @@ async def super_admin_login(
     # Update last login
     admin.last_login = datetime.utcnow()
     await db.commit()
+    await db.refresh(admin)
     
-    # Create access token
+    # Create access token with super admin role
     access_token = create_access_token(
-        data={"sub": str(admin.id), "role": "super_admin"}
+        subject=admin.id,
+        additional_claims={"role": "super_admin", "admin_email": admin.email}
     )
     
     # Log login
