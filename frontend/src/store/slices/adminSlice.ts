@@ -81,6 +81,11 @@ interface AdminState {
   schoolsSummary: SchoolSummary[];
   supportTickets: SupportTicket[];
   
+  // Loading states for different operations
+  isLoadingStats: boolean;
+  isLoadingSchools: boolean;
+  isLoadingTickets: boolean;
+  
   // UI State
   currentPage: string;
   sidebarCollapsed: boolean;
@@ -94,6 +99,9 @@ const initialState: AdminState = {
   systemStats: null,
   schoolsSummary: [],
   supportTickets: [],
+  isLoadingStats: false,
+  isLoadingSchools: false,
+  isLoadingTickets: false,
   currentPage: 'dashboard',
   sidebarCollapsed: false,
 };
@@ -277,8 +285,13 @@ const adminSlice = createSlice({
       })
       .addCase(initializeAdminAuth.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = true;
-        state.admin = action.payload;
+        if (action.payload) {
+          state.isAuthenticated = true;
+          state.admin = action.payload;
+        } else {
+          state.isAuthenticated = false;
+          state.admin = null;
+        }
       })
       .addCase(initializeAdminAuth.rejected, (state, action) => {
         state.isLoading = false;
@@ -290,43 +303,49 @@ const adminSlice = createSlice({
     // Get system stats
     builder
       .addCase(getSystemStats.pending, (state) => {
-        state.isLoading = true;
+        state.isLoadingStats = true;
       })
       .addCase(getSystemStats.fulfilled, (state, action) => {
-        state.isLoading = false;
+        state.isLoadingStats = false;
         state.systemStats = action.payload;
       })
       .addCase(getSystemStats.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.isLoadingStats = false;
+        if (state.error !== action.payload) {
+          state.error = action.payload as string;
+        }
       });
 
     // Get schools summary
     builder
       .addCase(getSchoolsSummary.pending, (state) => {
-        state.isLoading = true;
+        state.isLoadingSchools = true;
       })
       .addCase(getSchoolsSummary.fulfilled, (state, action) => {
-        state.isLoading = false;
+        state.isLoadingSchools = false;
         state.schoolsSummary = action.payload;
       })
       .addCase(getSchoolsSummary.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.isLoadingSchools = false;
+        if (state.error !== action.payload) {
+          state.error = action.payload as string;
+        }
       });
 
     // Get support tickets
     builder
       .addCase(getSupportTickets.pending, (state) => {
-        state.isLoading = true;
+        state.isLoadingTickets = true;
       })
       .addCase(getSupportTickets.fulfilled, (state, action) => {
-        state.isLoading = false;
+        state.isLoadingTickets = false;
         state.supportTickets = action.payload;
       })
       .addCase(getSupportTickets.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.isLoadingTickets = false;
+        if (state.error !== action.payload) {
+          state.error = action.payload as string;
+        }
       });
 
     // Suspend school

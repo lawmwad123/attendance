@@ -43,10 +43,14 @@ const AdminLoginPage: React.FC = () => {
     }
 
     try {
-      await dispatch(adminLogin(formData)).unwrap();
+      const result = await dispatch(adminLogin(formData)).unwrap();
+      console.log('Login successful:', result);
+      console.log('Admin token stored:', localStorage.getItem('admin_token'));
+      console.log('Admin user stored:', localStorage.getItem('admin_user'));
       navigate('/admin');
-    } catch (error) {
-      // Error is handled by the slice
+    } catch (error: any) {
+      console.error('Login error:', error);
+      // Error is handled by the Redux slice
     }
   };
 

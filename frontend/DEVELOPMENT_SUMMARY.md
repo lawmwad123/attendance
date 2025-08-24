@@ -175,7 +175,7 @@ cd frontend
 npm run dev
 
 # Access via:
-http://localhost:5174?tenant=demo
+http://localhost:5173?tenant=demo
 
 # Demo credentials:
 Email: admin@demo-school.com

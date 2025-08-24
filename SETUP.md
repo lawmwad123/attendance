@@ -48,7 +48,7 @@ TENANT_HEADER=X-Tenant-ID
 DEFAULT_TENANT=demo
 
 # CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:5174
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Development
 DEBUG=true

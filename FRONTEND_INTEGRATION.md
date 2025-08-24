@@ -2,13 +2,13 @@
 
 ## ✅ CORS Issue Resolved
 
-The CORS error you were experiencing has been fixed! Your frontend running on `http://localhost:5174` can now successfully communicate with the FastAPI backend.
+The CORS error you were experiencing has been fixed! Your frontend running on `http://localhost:5173` can now successfully communicate with the FastAPI backend.
 
 ## 🔧 Changes Made
 
 ### 1. Updated CORS Configuration
 - **File**: `.env`
-- **Change**: Added `http://localhost:5174` to allowed origins
+- **Change**: Added `http://localhost:5173` to allowed origins
 - **Result**: Frontend can now make requests to the API
 
 ### 2. Enhanced CORS Headers
@@ -199,7 +199,7 @@ Use these credentials for testing:
 ### Common Issues
 
 #### 1. CORS Errors
-- ✅ **Fixed**: Added `http://localhost:5174` to allowed origins
+- ✅ **Fixed**: Added `http://localhost:5173` to allowed origins
 - **If still having issues**: Check that your frontend is running on the correct port
 
 #### 2. Authentication Errors
@@ -217,7 +217,7 @@ Use these credentials for testing:
 #### Test CORS from Frontend Port
 ```bash
 curl -X OPTIONS http://localhost:8000/api/v1/auth/login \
-  -H "Origin: http://localhost:5174" \
+  -H "Origin: http://localhost:5173" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type,X-Tenant-ID" \
   -v
@@ -228,7 +228,7 @@ curl -X OPTIONS http://localhost:8000/api/v1/auth/login \
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Tenant-ID: demo" \
-  -H "Origin: http://localhost:5174" \
+  -H "Origin: http://localhost:5173" \
   -d '{"email":"admin@demo-school.com","password":"admin123"}'
 ```
 

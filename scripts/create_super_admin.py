@@ -135,7 +135,7 @@ async def create_super_admin():
             print(f"Email: {admin.email}")
             print(f"Username: {admin.username}")
             print(f"Role: {admin.role.value}")
-            print(f"\n🔐 You can now log in at: http://localhost:5174/admin/login")
+            print(f"\n🔐 You can now log in at: http://localhost:5173/admin/login")
             
     except Exception as e:
         print(f"❌ Error creating super admin: {e}")

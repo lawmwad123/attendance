@@ -58,7 +58,7 @@ Follow the prompts to create your admin account:
 
 3. Navigate to the admin panel:
    ```
-   http://localhost:5174/admin/login
+   http://localhost:5173/admin/login
    ```
 
 4. Log in with your super admin credentials
