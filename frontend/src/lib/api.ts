@@ -321,7 +321,7 @@ class ApiClient {
   }
 
   // Students
-  async getStudents(filters?: { status?: string; class_name?: string }): Promise<any[]> {
+  async getStudents(filters?: { status?: string; class_name?: string; search?: string }): Promise<any[]> {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {

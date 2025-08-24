@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import Modal from '../components/ui/Modal';
+import SearchableDropdown from '../components/ui/SearchableDropdown';
 import { 
   LogOut,
   LogIn,
@@ -91,7 +92,7 @@ const GatePassPage: React.FC = () => {
 
   // Fetch students for pass creation
   const { data: students } = useQuery<Student[]>({
-    queryKey: ['students'],
+    queryKey: ['students', 'active'],
     queryFn: async () => {
       return await api.getStudents({ status: 'active' });
     },
@@ -802,19 +803,27 @@ const GatePassPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Student Information</h3>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
-                    <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    <SearchableDropdown
+                      options={students?.map(student => ({
+                        value: student.id,
+                        label: `${student.full_name} (${student.student_id}) - ${student.class_name}`,
+                        ...student
+                      })) || []}
                       value={formData.student_id}
-                      onChange={(e) => setFormData({ ...formData, student_id: parseInt(e.target.value) })}
-                      required
-                    >
-                      <option value={0}>Select a student</option>
-                      {students?.map((student) => (
-                        <option key={student.id} value={student.id}>
-                          {student.full_name} ({student.student_id}) - {student.class_name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, student_id: Number(value) })}
+                      placeholder="Select a student"
+                      searchPlaceholder="Search students by name, ID, or class..."
+                      isLoading={false}
+                      renderOption={(option) => (
+                        <div className="flex flex-col">
+                          <span className="font-medium">{option.full_name}</span>
+                          <span className="text-sm text-gray-500">
+                            {option.student_id} • {option.class_name} - {option.section}
+                          </span>
+                        </div>
+                      )}
+                      getOptionLabel={(option) => `${option.full_name} (${option.student_id}) - ${option.class_name}`}
+                    />
                   </div>
                 </div>
 
