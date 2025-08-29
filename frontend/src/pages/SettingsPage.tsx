@@ -21,7 +21,8 @@ import {
   Search,
   Filter,
   MoreVertical,
-  UserCheck
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
 
 interface Tab {
@@ -55,6 +56,12 @@ const tabs: Tab[] = [
     name: 'Gate Pass',
     icon: <Shield className="h-5 w-5" />,
     description: 'Gate pass approval and exit settings'
+  },
+  {
+    id: 'visitor-management',
+    name: 'Visitor Management',
+    icon: <UserPlus className="h-5 w-5" />,
+    description: 'Visitor registration and management settings'
   },
   {
     id: 'notifications',
@@ -223,7 +230,7 @@ const SettingsPage: React.FC = () => {
       
       {/* Settings Overview */}
       {settings && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <div className="flex items-center">
               <div className="p-2 rounded-lg bg-blue-50 mr-3">
@@ -281,6 +288,20 @@ const SettingsPage: React.FC = () => {
                 <p className="text-sm text-gray-600">Staff Attendance</p>
                 <p className="text-xl font-bold text-gray-900">
                   {settings.staff_attendance?.staff_attendance_reports_enabled ? 'Enabled' : 'Disabled'}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-pink-500">
+            <div className="flex items-center">
+              <div className="p-2 rounded-lg bg-pink-50 mr-3">
+                <UserPlus className="h-6 w-6 text-pink-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Visitor Management</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {settings.visitor_management?.visitor_management_enabled ? 'Enabled' : 'Disabled'}
                 </p>
               </div>
             </div>
@@ -350,6 +371,14 @@ const SettingsPage: React.FC = () => {
                 <GatePassSettingsTab 
                   settings={settings.gate_pass}
                   gatePassWorkflows={gatePassWorkflows}
+                  onSave={handleSave}
+                  isSaving={isSaving}
+                />
+              )}
+              
+              {activeTab === 'visitor-management' && settings && (
+                <VisitorManagementSettingsTab 
+                  settings={settings.visitor_management || {}}
                   onSave={handleSave}
                   isSaving={isSaving}
                 />
@@ -1638,6 +1667,344 @@ const StaffAttendanceSettingsTab: React.FC<{
               />
               <span className="ml-2 text-sm text-gray-700">Enable attendance notifications</span>
             </label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex justify-end pt-4 border-t border-gray-200">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
+        >
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// Visitor Management Settings Tab
+const VisitorManagementSettingsTab: React.FC<{
+  settings: any;
+  onSave: (data: any) => void;
+  isSaving: boolean;
+}> = ({ settings, onSave, isSaving }) => {
+  const [formData, setFormData] = useState({
+    visitor_management_enabled: settings?.visitor_management_enabled ?? true,
+    visitor_approval_workflow: settings?.visitor_approval_workflow ?? "host_approve",
+    visitor_auto_approve_parent_visits: settings?.visitor_auto_approve_parent_visits ?? true,
+    visitor_require_id_verification: settings?.visitor_require_id_verification ?? true,
+    visitor_notify_host_on_arrival: settings?.visitor_notify_host_on_arrival ?? true,
+    visitor_notify_parent_on_visitor: settings?.visitor_notify_parent_on_visitor ?? true,
+    visitor_notify_security_on_overstay: settings?.visitor_notify_security_on_overstay ?? true,
+    visitor_print_badges: settings?.visitor_print_badges ?? true,
+    visitor_badge_expiry_hours: settings?.visitor_badge_expiry_hours ?? 8,
+    visitor_enable_blacklist: settings?.visitor_enable_blacklist ?? true,
+    visitor_enable_emergency_evacuation: settings?.visitor_enable_emergency_evacuation ?? true,
+    visitor_integrate_with_gate_pass: settings?.visitor_integrate_with_gate_pass ?? true,
+    visitor_enable_qr_codes: settings?.visitor_enable_qr_codes ?? true,
+    visitor_allow_pre_registration: settings?.visitor_allow_pre_registration ?? true,
+    visitor_pre_registration_hours_ahead: settings?.visitor_pre_registration_hours_ahead ?? 24,
+    visitor_auto_approve_pre_registered: settings?.visitor_auto_approve_pre_registered ?? false,
+    visitor_visiting_hours_start: settings?.visitor_visiting_hours_start ?? "09:00",
+    visitor_visiting_hours_end: settings?.visitor_visiting_hours_end ?? "16:00",
+    visitor_max_duration_hours: settings?.visitor_max_duration_hours ?? 2,
+    visitor_auto_checkout_after_hours: settings?.visitor_auto_checkout_after_hours ?? 4
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Submitting visitor management settings:', formData);
+    onSave(formData);
+  };
+
+  const approvalWorkflows = [
+    { value: "host_approve", label: "Host Approval Required" },
+    { value: "admin_approve", label: "Admin Approval Required" },
+    { value: "auto_approve", label: "Auto Approve" },
+    { value: "security_approve", label: "Security Approval Required" }
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Visitor Management Settings</h3>
+        
+        {/* General Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">General Settings</h4>
+          <div className="space-y-4">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_management_enabled}
+                onChange={(e) => setFormData({ ...formData, visitor_management_enabled: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable visitor management system</span>
+            </label>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Approval Workflow
+              </label>
+              <select
+                value={formData.visitor_approval_workflow}
+                onChange={(e) => setFormData({ ...formData, visitor_approval_workflow: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                {approvalWorkflows.map((workflow) => (
+                  <option key={workflow.value} value={workflow.value}>{workflow.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Parent Visit Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Parent Visit Settings</h4>
+          <div className="space-y-4">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_auto_approve_parent_visits}
+                onChange={(e) => setFormData({ ...formData, visitor_auto_approve_parent_visits: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Auto-approve parent/guardian visits</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_require_id_verification}
+                onChange={(e) => setFormData({ ...formData, visitor_require_id_verification: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Require ID verification for all visitors</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Notification Settings</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_notify_host_on_arrival}
+                onChange={(e) => setFormData({ ...formData, visitor_notify_host_on_arrival: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Notify host on visitor arrival</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_notify_parent_on_visitor}
+                onChange={(e) => setFormData({ ...formData, visitor_notify_parent_on_visitor: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Notify parents when visitor arrives</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_notify_security_on_overstay}
+                onChange={(e) => setFormData({ ...formData, visitor_notify_security_on_overstay: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Notify security on visitor overstay</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Badge & QR Code Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Badge & QR Code Settings</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_print_badges}
+                onChange={(e) => setFormData({ ...formData, visitor_print_badges: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Print visitor badges</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_enable_qr_codes}
+                onChange={(e) => setFormData({ ...formData, visitor_enable_qr_codes: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable QR codes for visitors</span>
+            </label>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Badge Expiry (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.visitor_badge_expiry_hours}
+                onChange={(e) => setFormData({ ...formData, visitor_badge_expiry_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="24"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Integration Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Security & Integration</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_enable_blacklist}
+                onChange={(e) => setFormData({ ...formData, visitor_enable_blacklist: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable visitor blacklist</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_enable_emergency_evacuation}
+                onChange={(e) => setFormData({ ...formData, visitor_enable_emergency_evacuation: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable emergency evacuation lists</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_integrate_with_gate_pass}
+                onChange={(e) => setFormData({ ...formData, visitor_integrate_with_gate_pass: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Integrate with gate pass system</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Pre-registration Settings */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Pre-registration Settings</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_allow_pre_registration}
+                onChange={(e) => setFormData({ ...formData, visitor_allow_pre_registration: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Allow pre-registration</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.visitor_auto_approve_pre_registered}
+                onChange={(e) => setFormData({ ...formData, visitor_auto_approve_pre_registered: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Auto-approve pre-registered visitors</span>
+            </label>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pre-registration Hours Ahead
+              </label>
+              <input
+                type="number"
+                value={formData.visitor_pre_registration_hours_ahead}
+                onChange={(e) => setFormData({ ...formData, visitor_pre_registration_hours_ahead: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="168"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Visiting Hours & Duration */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Visiting Hours & Duration</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Visiting Hours Start
+              </label>
+              <input
+                type="time"
+                value={formData.visitor_visiting_hours_start}
+                onChange={(e) => setFormData({ ...formData, visitor_visiting_hours_start: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Visiting Hours End
+              </label>
+              <input
+                type="time"
+                value={formData.visitor_visiting_hours_end}
+                onChange={(e) => setFormData({ ...formData, visitor_visiting_hours_end: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maximum Duration (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.visitor_max_duration_hours}
+                onChange={(e) => setFormData({ ...formData, visitor_max_duration_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="12"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Auto Checkout After (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.visitor_auto_checkout_after_hours}
+                onChange={(e) => setFormData({ ...formData, visitor_auto_checkout_after_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="24"
+              />
+            </div>
           </div>
         </div>
       </div>

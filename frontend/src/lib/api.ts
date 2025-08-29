@@ -82,6 +82,28 @@ interface SettingsSummary {
     staff_attendance_reports_enabled?: boolean;
     staff_attendance_notifications_enabled?: boolean;
   };
+  visitor_management: {
+    visitor_management_enabled: boolean;
+    visitor_approval_workflow: string;
+    visitor_auto_approve_parent_visits: boolean;
+    visitor_require_id_verification: boolean;
+    visitor_notify_host_on_arrival: boolean;
+    visitor_notify_parent_on_visitor: boolean;
+    visitor_notify_security_on_overstay: boolean;
+    visitor_print_badges: boolean;
+    visitor_badge_expiry_hours: number;
+    visitor_enable_blacklist: boolean;
+    visitor_enable_emergency_evacuation: boolean;
+    visitor_integrate_with_gate_pass: boolean;
+    visitor_enable_qr_codes: boolean;
+    visitor_allow_pre_registration: boolean;
+    visitor_pre_registration_hours_ahead: number;
+    visitor_auto_approve_pre_registered: boolean;
+    visitor_visiting_hours_start: string;
+    visitor_visiting_hours_end: string;
+    visitor_max_duration_hours: number;
+    visitor_auto_checkout_after_hours: number;
+  };
   total_classes: number;
   total_subjects: number;
   total_devices: number;
