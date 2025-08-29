@@ -138,6 +138,28 @@ class SchoolSettings(TenantBaseModel):
     staff_attendance_reports_enabled = Column(Boolean, default=True)
     staff_attendance_notifications_enabled = Column(Boolean, default=True)
     
+    # Visitor Management Settings
+    visitor_management_enabled = Column(Boolean, default=True)
+    visitor_approval_workflow = Column(String(50), default="host_approve")  # auto_approve, host_approve, admin_approve, both_approve
+    visitor_auto_approve_parent_visits = Column(Boolean, default=True)
+    visitor_require_id_verification = Column(Boolean, default=True)
+    visitor_notify_host_on_arrival = Column(Boolean, default=True)
+    visitor_notify_parent_on_visitor = Column(Boolean, default=True)
+    visitor_notify_security_on_overstay = Column(Boolean, default=True)
+    visitor_print_badges = Column(Boolean, default=True)
+    visitor_badge_expiry_hours = Column(Integer, default=8)
+    visitor_enable_blacklist = Column(Boolean, default=True)
+    visitor_enable_emergency_evacuation = Column(Boolean, default=True)
+    visitor_integrate_with_gate_pass = Column(Boolean, default=True)
+    visitor_enable_qr_codes = Column(Boolean, default=True)
+    visitor_allow_pre_registration = Column(Boolean, default=True)
+    visitor_pre_registration_hours_ahead = Column(Integer, default=24)
+    visitor_auto_approve_pre_registered = Column(Boolean, default=False)
+    visitor_visiting_hours_start = Column(String(10), default="09:00")
+    visitor_visiting_hours_end = Column(String(10), default="16:00")
+    visitor_max_duration_hours = Column(Integer, default=2)
+    visitor_auto_checkout_after_hours = Column(Integer, default=4)
+    
     # Relationships
     school = relationship("School", back_populates="settings")
     

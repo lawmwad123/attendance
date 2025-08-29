@@ -99,6 +99,59 @@ interface ClassLevel {
   updated_at: string;
 }
 
+// Visitor Management Types
+interface Visitor {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone: string;
+  visitor_type: string;
+  purpose: string;
+  status: string;
+  requested_entry_time: string;
+  expected_exit_time?: string;
+  actual_entry_time?: string;
+  actual_exit_time?: string;
+  host_user_name?: string;
+  host_student_name?: string;
+  qr_code?: string;
+  badge_number?: string;
+  is_blacklisted: boolean;
+  is_overdue: boolean;
+  visit_duration_minutes?: number;
+  entry_gate?: string;
+  exit_gate?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface VisitorAnalytics {
+  total_visitors_today: number;
+  total_visitors_this_week: number;
+  total_visitors_this_month: number;
+  visitors_checked_in: number;
+  visitors_overdue: number;
+  blacklisted_attempts: number;
+  popular_visitor_types: Array<{type: string, count: number}>;
+  peak_visiting_hours: Array<{hour: string, count: number}>;
+  average_visit_duration: number;
+}
+
+interface VisitorSearchParams {
+  search?: string;
+  visitor_type?: string;
+  status?: string;
+  host_user_id?: number;
+  host_student_id?: number;
+  date_from?: string;
+  date_to?: string;
+  is_blacklisted?: boolean;
+  is_overdue?: boolean;
+  skip?: number;
+  limit?: number;
+}
+
 interface Class {
   id: number;
   name: string;
@@ -711,6 +764,95 @@ class ApiClient {
 
   async getGatePassWorkflows(): Promise<string[]> {
     const response = await apiClient.get<string[]>('/settings/enums/gate-pass-workflows');
+    return response.data;
+  }
+
+  // Visitor Management API Methods
+  async getVisitors(params?: VisitorSearchParams): Promise<Visitor[]> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await apiClient.get<Visitor[]>(`/visitors?${queryParams.toString()}`);
+    return response.data;
+  }
+
+  async getVisitor(visitorId: number): Promise<Visitor> {
+    const response = await apiClient.get<Visitor>(`/visitors/${visitorId}`);
+    return response.data;
+  }
+
+  async createVisitor(visitorData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>('/visitors', visitorData);
+    return response.data;
+  }
+
+  async updateVisitor(visitorId: number, visitorData: any): Promise<Visitor> {
+    const response = await apiClient.put<Visitor>(`/visitors/${visitorId}`, visitorData);
+    return response.data;
+  }
+
+  async checkInVisitor(visitorId: number, checkInData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>(`/visitors/${visitorId}/check-in`, checkInData);
+    return response.data;
+  }
+
+  async checkOutVisitor(visitorId: number, checkOutData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>(`/visitors/${visitorId}/check-out`, checkOutData);
+    return response.data;
+  }
+
+  async approveVisitor(visitorId: number, approvalData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>(`/visitors/${visitorId}/approve`, approvalData);
+    return response.data;
+  }
+
+  async denyVisitor(visitorId: number, denialData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>(`/visitors/${visitorId}/deny`, denialData);
+    return response.data;
+  }
+
+  async preRegisterVisitor(visitorData: any): Promise<Visitor> {
+    const response = await apiClient.post<Visitor>('/visitors/pre-register', visitorData);
+    return response.data;
+  }
+
+  async getVisitorAnalytics(): Promise<VisitorAnalytics> {
+    const response = await apiClient.get<VisitorAnalytics>('/visitors/analytics');
+    return response.data;
+  }
+
+  async getVisitorBlacklist(): Promise<any[]> {
+    const response = await apiClient.get<any[]>('/visitors/blacklist');
+    return response.data;
+  }
+
+  async addToBlacklist(blacklistData: any): Promise<any> {
+    const response = await apiClient.post<any>('/visitors/blacklist', blacklistData);
+    return response.data;
+  }
+
+  async removeFromBlacklist(blacklistId: number): Promise<void> {
+    await apiClient.delete(`/visitors/blacklist/${blacklistId}`);
+  }
+
+  async getVisitorSettings(): Promise<any> {
+    const response = await apiClient.get<any>('/visitors/settings');
+    return response.data;
+  }
+
+  async updateVisitorSettings(settingsData: any): Promise<any> {
+    const response = await apiClient.put<any>('/visitors/settings', settingsData);
+    return response.data;
+  }
+
+  async getEmergencyEvacuationList(): Promise<any> {
+    const response = await apiClient.get<any>('/visitors/emergency-evacuation');
     return response.data;
   }
 

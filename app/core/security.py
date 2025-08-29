@@ -102,4 +102,19 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         )
         return decoded_token["sub"]
     except JWTError:
-        return None 
+        return None
+
+
+def generate_qr_code(data: str) -> str:
+    """
+    Generate a QR code for visitor access.
+    Returns a unique QR code string.
+    """
+    import uuid
+    import hashlib
+    
+    # Create a unique identifier based on data and timestamp
+    unique_data = f"{data}_{datetime.utcnow().isoformat()}_{uuid.uuid4()}"
+    qr_hash = hashlib.sha256(unique_data.encode()).hexdigest()[:16]
+    
+    return f"VISITOR_{qr_hash.upper()}" 

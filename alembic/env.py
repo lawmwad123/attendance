@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.core.database import Base
 
 # Import all models so they are registered with SQLAlchemy
-from app.models import user, school, student, attendance, gate_pass
+from app.models import user, school, student, attendance, gate_pass, visitor
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

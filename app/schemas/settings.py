@@ -414,6 +414,29 @@ class StaffAttendanceSettings(BaseModel):
     staff_attendance_notifications_enabled: Optional[bool] = True
 
 
+class VisitorManagementSettings(BaseModel):
+    visitor_management_enabled: bool = True
+    visitor_approval_workflow: str = "host_approve"
+    visitor_auto_approve_parent_visits: bool = True
+    visitor_require_id_verification: bool = True
+    visitor_notify_host_on_arrival: bool = True
+    visitor_notify_parent_on_visitor: bool = True
+    visitor_notify_security_on_overstay: bool = True
+    visitor_print_badges: bool = True
+    visitor_badge_expiry_hours: int = 8
+    visitor_enable_blacklist: bool = True
+    visitor_enable_emergency_evacuation: bool = True
+    visitor_integrate_with_gate_pass: bool = True
+    visitor_enable_qr_codes: bool = True
+    visitor_allow_pre_registration: bool = True
+    visitor_pre_registration_hours_ahead: int = 24
+    visitor_auto_approve_pre_registered: bool = False
+    visitor_visiting_hours_start: str = "09:00"
+    visitor_visiting_hours_end: str = "16:00"
+    visitor_max_duration_hours: int = 2
+    visitor_auto_checkout_after_hours: int = 4
+
+
 # Settings summary for dashboard
 class SettingsSummary(BaseModel):
     general: GeneralSettings
@@ -422,6 +445,7 @@ class SettingsSummary(BaseModel):
     gate_pass: GatePassSettings
     notifications: NotificationSettings
     biometric: BiometricSettings
+    visitor_management: VisitorManagementSettings
     total_classes: int
     total_subjects: int
     total_devices: int

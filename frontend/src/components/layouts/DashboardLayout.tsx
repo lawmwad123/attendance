@@ -19,7 +19,8 @@ import {
   LogOut,
   Bell,
   School,
-  User
+  User,
+  UserPlus
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -78,6 +79,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       name: 'Gate Pass',
       href: '/gate-pass',
       icon: Shield,
+      current: false,
+    },
+    {
+      name: 'Visitors',
+      href: '/visitors',
+      icon: UserPlus,
       current: false,
     },
     {
