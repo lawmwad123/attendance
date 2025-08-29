@@ -43,7 +43,8 @@ async def get_school_settings(
             detail="School settings not found"
         )
     
-    return settings
+    # Convert to dict to handle datetime serialization
+    return settings.dict()
 
 
 @router.post("/", response_model=SchoolSettingsSchema)
@@ -74,7 +75,8 @@ async def create_school_settings(
     await db.commit()
     await db.refresh(settings)
     
-    return settings
+    # Convert to dict to handle datetime serialization
+    return settings.dict()
 
 
 @router.put("/", response_model=SchoolSettingsSchema)
@@ -102,7 +104,8 @@ async def update_school_settings(
     await db.commit()
     await db.refresh(settings)
     
-    return settings
+    # Convert to dict to handle datetime serialization
+    return settings.dict()
 
 
 # ============================================================================
