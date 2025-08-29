@@ -194,7 +194,13 @@ async def create_visitor(
     if visitor.status == VisitorStatus.APPROVED:
         background_tasks.add_task(send_visitor_notifications, visitor.id, db)
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 @router.get("/{visitor_id}", response_model=VisitorResponse)
@@ -284,7 +290,13 @@ async def update_visitor(
     db.add(log)
     await db.commit()
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 # ============================================================================
@@ -351,7 +363,13 @@ async def check_in_visitor(
     # Send notifications in background
     background_tasks.add_task(send_check_in_notifications, visitor.id, db)
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 @router.post("/{visitor_id}/check-out", response_model=VisitorResponse)
@@ -404,7 +422,13 @@ async def check_out_visitor(
     db.add(log)
     await db.commit()
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 # ============================================================================
@@ -481,7 +505,13 @@ async def approve_visitor(
     # Send notifications in background
     background_tasks.add_task(send_visitor_notifications, visitor.id, db)
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 @router.post("/{visitor_id}/deny", response_model=VisitorResponse)
@@ -533,7 +563,13 @@ async def deny_visitor(
     db.add(log)
     await db.commit()
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 # ============================================================================
@@ -602,7 +638,13 @@ async def pre_register_visitor(
     db.add(log)
     await db.commit()
     
-    return visitor
+    # Convert to response format
+    visitor_dict = visitor.dict()
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+    
+    return VisitorResponse(**visitor_dict)
 
 
 # ============================================================================
