@@ -5,11 +5,11 @@ from sqlalchemy import select, func, and_, or_
 from datetime import datetime, timedelta
 
 from app.api.deps import get_db, require_security_with_gate_pass_settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.student import Student
-from app.models.attendance import Attendance
-from app.models.visitor import Visitor
-from app.models.staff_attendance import StaffAttendance
+from app.models.attendance import Attendance, AttendanceStatus
+from app.models.visitor import Visitor, VisitorStatus
+from app.models.staff_attendance import StaffAttendance, StaffAttendanceStatus
 from app.schemas.security import (
     SecurityDashboardResponse,
     PersonSearchResponse,
@@ -46,7 +46,7 @@ async def get_security_dashboard(
         staff_present_stmt = select(func.count(User.id)).where(
             and_(
                 User.school_id == current_user.school_id,
-                User.role.in_(['admin', 'teacher', 'security']),
+                User.role.in_([UserRole.ADMIN, UserRole.TEACHER, UserRole.SECURITY]),
                 User.is_active == True
             )
         )
@@ -57,7 +57,7 @@ async def get_security_dashboard(
         visitors_today_stmt = select(func.count(Visitor.id)).where(
             and_(
                 Visitor.school_id == current_user.school_id,
-                func.date(Visitor.entry_time) == today
+                func.date(Visitor.actual_entry_time) == today
             )
         )
         visitors_today_result = await db.execute(visitors_today_stmt)
@@ -67,9 +67,9 @@ async def get_security_dashboard(
         recent_checkins_stmt = select(Attendance).where(
             and_(
                 Attendance.school_id == current_user.school_id,
-                func.date(Attendance.timestamp) == today
+                func.date(Attendance.marked_at) == today
             )
-        ).order_by(Attendance.timestamp.desc()).limit(10)
+        ).order_by(Attendance.marked_at.desc()).limit(10)
         
         recent_checkins_result = await db.execute(recent_checkins_stmt)
         recent_checkins = recent_checkins_result.scalars().all()
@@ -93,8 +93,8 @@ async def get_security_dashboard(
             
             formatted_checkins.append({
                 "person_name": person_name,
-                "type": checkin.check_type,
-                "time": checkin.timestamp.strftime("%H:%M"),
+                "type": checkin.status,
+                "time": checkin.marked_at.strftime("%H:%M"),
                 "method": checkin.method
             })
         
@@ -105,7 +105,7 @@ async def get_security_dashboard(
         emergency_contacts_stmt = select(User).where(
             and_(
                 User.school_id == current_user.school_id,
-                User.role.in_(['admin', 'security']),
+                User.role.in_([UserRole.ADMIN, UserRole.SECURITY]),
                 User.is_active == True
             )
         ).limit(5)
@@ -184,7 +184,7 @@ async def search_people(
             and_(
                 User.school_id == current_user.school_id,
                 User.is_active == True,
-                User.role.in_(['admin', 'teacher', 'security']),
+                User.role.in_([UserRole.ADMIN, UserRole.TEACHER, UserRole.SECURITY]),
                 or_(
                     User.first_name.ilike(search_term),
                     User.last_name.ilike(search_term),
@@ -236,11 +236,12 @@ async def mark_attendance(
         attendance = Attendance(
             school_id=current_user.school_id,
             student_id=person.id,
-            check_type=attendance_data.check_type,
+            status=AttendanceStatus.PRESENT if attendance_data.check_type == "IN" else AttendanceStatus.ABSENT,
             method=attendance_data.method,
             location=attendance_data.location,
             notes=attendance_data.notes,
-            timestamp=datetime.now()
+            marked_at=datetime.now(),
+            attendance_date=datetime.now().date()
         )
         
     elif attendance_data.person_type == "staff":
@@ -260,12 +261,13 @@ async def mark_attendance(
         # Create staff attendance record
         attendance = StaffAttendance(
             school_id=current_user.school_id,
-            user_id=person.id,
-            check_type=attendance_data.check_type,
+            staff_id=person.id,
+            status=StaffAttendanceStatus.PRESENT if attendance_data.check_type == "IN" else StaffAttendanceStatus.ABSENT,
             method=attendance_data.method,
             location=attendance_data.location,
             notes=attendance_data.notes,
-            timestamp=datetime.now()
+            marked_at=datetime.now(),
+            attendance_date=datetime.now().date()
         )
     
     else:
@@ -288,7 +290,7 @@ async def get_recent_checkins(
     # Get recent student attendance
     student_attendance_stmt = select(Attendance).where(
         Attendance.school_id == current_user.school_id
-    ).order_by(Attendance.timestamp.desc()).limit(limit)
+    ).order_by(Attendance.marked_at.desc()).limit(limit)
     
     student_result = await db.execute(student_attendance_stmt)
     student_attendance = student_result.scalars().all()
@@ -296,7 +298,7 @@ async def get_recent_checkins(
     # Get recent staff attendance
     staff_attendance_stmt = select(StaffAttendance).where(
         StaffAttendance.school_id == current_user.school_id
-    ).order_by(StaffAttendance.timestamp.desc()).limit(limit)
+    ).order_by(StaffAttendance.marked_at.desc()).limit(limit)
     
     staff_result = await db.execute(staff_attendance_stmt)
     staff_attendance = staff_result.scalars().all()
@@ -312,10 +314,10 @@ async def get_recent_checkins(
         if student:
             all_attendance.append({
                 "person_name": f"{student.first_name} {student.last_name}",
-                "check_type": attendance.check_type,
-                "time": attendance.timestamp.strftime("%H:%M"),
+                "check_type": attendance.status,
+                "time": attendance.marked_at.strftime("%H:%M"),
                 "method": attendance.method,
-                "timestamp": attendance.timestamp
+                "timestamp": attendance.marked_at
             })
     
     for attendance in staff_attendance:
@@ -326,10 +328,10 @@ async def get_recent_checkins(
         if user:
             all_attendance.append({
                 "person_name": f"{user.first_name} {user.last_name}",
-                "check_type": attendance.check_type,
-                "time": attendance.timestamp.strftime("%H:%M"),
+                "check_type": attendance.status,
+                "time": attendance.marked_at.strftime("%H:%M"),
                 "method": attendance.method,
-                "timestamp": attendance.timestamp
+                "timestamp": attendance.marked_at
             })
     
     # Sort by timestamp and return limited results
@@ -351,12 +353,13 @@ async def register_visitor(
         phone=visitor_data.phone,
         email=visitor_data.email,
         purpose=visitor_data.purpose,
-        meeting_with=visitor_data.meeting_with,
-        location=visitor_data.location,
+        requested_entry_time=datetime.now(),
+        actual_entry_time=datetime.now(),
+        status=VisitorStatus.CHECKED_IN,
+        entry_security_guard_id=current_user.id,
+        entry_gate="main_gate",
         id_number=visitor_data.id_number,
-        vehicle_number=visitor_data.vehicle_number,
-        entry_time=datetime.now(),
-        status="present"
+        vehicle_number=visitor_data.vehicle_number
     )
     
     db.add(visitor)
@@ -378,7 +381,7 @@ async def check_out_visitor(
         and_(
             Visitor.id == visitor_id,
             Visitor.school_id == current_user.school_id,
-            Visitor.status == "present"
+            Visitor.status == VisitorStatus.CHECKED_IN
         )
     )
     
@@ -388,9 +391,9 @@ async def check_out_visitor(
     if not visitor:
         raise HTTPException(status_code=404, detail="Visitor not found or already checked out")
     
-    visitor.exit_time = datetime.now()
-    visitor.status = "checked_out"
-    visitor.exit_notes = checkout_data.notes
+    visitor.actual_exit_time = datetime.now()
+    visitor.status = VisitorStatus.CHECKED_OUT
+    visitor.security_notes = checkout_data.notes
     
     await db.commit()
     await db.refresh(visitor)
@@ -414,15 +417,17 @@ async def get_visitors(
             or_(
                 Visitor.first_name.ilike(search_term),
                 Visitor.last_name.ilike(search_term),
-                Visitor.purpose.ilike(search_term),
-                Visitor.meeting_with.ilike(search_term)
+                Visitor.purpose.ilike(search_term)
             )
         )
     
     if status and status != "all":
-        query = query.where(Visitor.status == status)
+        if status == "present":
+            query = query.where(Visitor.status == VisitorStatus.CHECKED_IN)
+        elif status == "checked_out":
+            query = query.where(Visitor.status == VisitorStatus.CHECKED_OUT)
     
-    query = query.order_by(Visitor.entry_time.desc())
+    query = query.order_by(Visitor.actual_entry_time.desc())
     
     result = await db.execute(query)
     visitors = result.scalars().all()
