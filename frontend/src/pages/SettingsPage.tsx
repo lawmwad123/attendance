@@ -91,7 +91,6 @@ const tabs: Tab[] = [
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const queryClient = useQueryClient();
 
   // Fetch settings data
@@ -168,15 +167,17 @@ const SettingsPage: React.FC = () => {
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
-    mutationFn: (data: any) => api.updateSchoolSettings(data),
+    mutationFn: (data: any) => {
+      console.log('Sending data to API:', data);
+      return api.updateSchoolSettings(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settingsSummary'] });
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      toast.success('Settings saved successfully!');
     },
-    onError: () => {
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+    onError: (error: any) => {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings. Please try again.');
     }
   });
 
@@ -216,18 +217,7 @@ const SettingsPage: React.FC = () => {
           <p className="text-gray-600">Configure school and system settings</p>
         </div>
         <div className="flex items-center space-x-3">
-          {saveStatus === 'success' && (
-            <div className="flex items-center px-4 py-2 bg-green-50 text-green-700 rounded-md">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">Saved successfully</span>
-            </div>
-          )}
-          {saveStatus === 'error' && (
-            <div className="flex items-center px-4 py-2 bg-red-50 text-red-700 rounded-md">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">Error saving settings</span>
-            </div>
-          )}
+          {/* Status messages now handled by toast notifications */}
         </div>
       </div>
       
@@ -1339,26 +1329,27 @@ const StaffAttendanceSettingsTab: React.FC<{
   isSaving: boolean;
 }> = ({ settings, onSave, isSaving }) => {
   const [formData, setFormData] = useState({
-    staff_clock_in_start_time: settings.staff_clock_in_start_time || '08:00',
-    staff_clock_in_end_time: settings.staff_clock_in_end_time || '09:00',
-    staff_clock_out_start_time: settings.staff_clock_out_start_time || '16:00',
-    staff_clock_out_end_time: settings.staff_clock_out_end_time || '17:00',
-    staff_late_threshold_minutes: settings.staff_late_threshold_minutes || 15,
-    staff_overtime_threshold_hours: settings.staff_overtime_threshold_hours || 8,
-    staff_auto_mark_absent_hours: settings.staff_auto_mark_absent_hours || 2,
-    staff_attendance_methods: settings.staff_attendance_methods || ['web_portal', 'biometric', 'rfid'],
-    staff_leave_approval_workflow: settings.staff_leave_approval_workflow || 'admin_only',
-    staff_leave_auto_approve_hours: settings.staff_leave_auto_approve_hours || 24,
-    staff_leave_types: settings.staff_leave_types || ['personal_leave', 'sick_leave', 'annual_leave', 'emergency_leave'],
-    staff_work_days: settings.staff_work_days || [1, 2, 3, 4, 5], // Monday to Friday
-    staff_holiday_calendar_enabled: settings.staff_holiday_calendar_enabled || false,
-    staff_attendance_reports_enabled: settings.staff_attendance_reports_enabled || true,
-    staff_attendance_notifications_enabled: settings.staff_attendance_notifications_enabled || true
+    staff_clock_in_start_time: settings?.staff_clock_in_start_time || '08:00',
+    staff_clock_in_end_time: settings?.staff_clock_in_end_time || '09:00',
+    staff_clock_out_start_time: settings?.staff_clock_out_start_time || '16:00',
+    staff_clock_out_end_time: settings?.staff_clock_out_end_time || '17:00',
+    staff_late_threshold_minutes: settings?.staff_late_threshold_minutes || 15,
+    staff_overtime_threshold_hours: settings?.staff_overtime_threshold_hours || 8,
+    staff_auto_mark_absent_hours: settings?.staff_auto_mark_absent_hours || 2,
+    staff_attendance_methods: settings?.staff_attendance_methods || ['web_portal', 'biometric', 'rfid'],
+    staff_leave_approval_workflow: settings?.staff_leave_approval_workflow || 'admin_only',
+    staff_leave_auto_approve_hours: settings?.staff_leave_auto_approve_hours || 24,
+    staff_leave_types: settings?.staff_leave_types || ['personal_leave', 'sick_leave', 'annual_leave', 'emergency_leave'],
+    staff_work_days: settings?.staff_work_days || [1, 2, 3, 4, 5], // Monday to Friday
+    staff_holiday_calendar_enabled: settings?.staff_holiday_calendar_enabled || false,
+    staff_attendance_reports_enabled: settings?.staff_attendance_reports_enabled || true,
+    staff_attendance_notifications_enabled: settings?.staff_attendance_notifications_enabled || true
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ staff_attendance: formData });
+    console.log('Submitting staff attendance settings:', formData);
+    onSave(formData);
   };
 
   const workDays = [

@@ -98,8 +98,13 @@ async def update_school_settings(
     
     # Update only provided fields
     update_data = settings_data.dict(exclude_unset=True)
+    print(f"Updating settings with data: {update_data}")
     for field, value in update_data.items():
-        setattr(settings, field, value)
+        if hasattr(settings, field):
+            setattr(settings, field, value)
+            print(f"  ✓ Set {field} = {value}")
+        else:
+            print(f"  ✗ Field {field} not found in settings model")
     
     await db.commit()
     await db.refresh(settings)
