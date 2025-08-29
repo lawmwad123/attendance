@@ -121,6 +121,23 @@ class SchoolSettings(TenantBaseModel):
     api_keys = Column(JSON, nullable=True)  # {"biometric_device": "...", "payment_gateway": "..."}
     integrations = Column(JSON, nullable=True)  # {"erp_system": "moodle", "payment_gateway": "stripe"}
     
+    # Staff Attendance Settings
+    staff_clock_in_start_time = Column(String(10), nullable=True)  # e.g., "08:00"
+    staff_clock_in_end_time = Column(String(10), nullable=True)    # e.g., "09:00"
+    staff_clock_out_start_time = Column(String(10), nullable=True)  # e.g., "16:00"
+    staff_clock_out_end_time = Column(String(10), nullable=True)    # e.g., "17:00"
+    staff_late_threshold_minutes = Column(Integer, default=15)
+    staff_overtime_threshold_hours = Column(Integer, default=8)
+    staff_auto_mark_absent_hours = Column(Integer, default=2)
+    staff_attendance_methods = Column(JSON, nullable=True)  # ["web_portal", "biometric", "rfid"]
+    staff_leave_approval_workflow = Column(String(50), default="admin_only")
+    staff_leave_auto_approve_hours = Column(Integer, default=24)
+    staff_leave_types = Column(JSON, nullable=True)  # ["personal_leave", "sick_leave", "annual_leave"]
+    staff_work_days = Column(JSON, nullable=True)  # [1, 2, 3, 4, 5] - Monday to Friday
+    staff_holiday_calendar_enabled = Column(Boolean, default=False)
+    staff_attendance_reports_enabled = Column(Boolean, default=True)
+    staff_attendance_notifications_enabled = Column(Boolean, default=True)
+    
     # Relationships
     school = relationship("School", back_populates="settings")
     

@@ -65,6 +65,23 @@ interface SettingsSummary {
     rfid_card_format?: string;
     card_reissue_policy?: string;
   };
+  staff_attendance: {
+    staff_clock_in_start_time?: string;
+    staff_clock_in_end_time?: string;
+    staff_clock_out_start_time?: string;
+    staff_clock_out_end_time?: string;
+    staff_late_threshold_minutes?: number;
+    staff_overtime_threshold_hours?: number;
+    staff_auto_mark_absent_hours?: number;
+    staff_attendance_methods?: string[];
+    staff_leave_approval_workflow?: string;
+    staff_leave_auto_approve_hours?: number;
+    staff_leave_types?: string[];
+    staff_work_days?: number[];
+    staff_holiday_calendar_enabled?: boolean;
+    staff_attendance_reports_enabled?: boolean;
+    staff_attendance_notifications_enabled?: boolean;
+  };
   total_classes: number;
   total_subjects: number;
   total_devices: number;
@@ -557,6 +574,109 @@ class ApiClient {
     const params = deviceType ? `?device_type=${deviceType}` : '';
     const response = await apiClient.get<Device[]>(`/settings/devices${params}`);
     return response.data;
+  }
+
+  // Staff Attendance
+  async getStaffAttendance(filters?: { staff_id?: number; start_date?: string; end_date?: string; status?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await apiClient.get(`/staff-attendance/?${params.toString()}`);
+    return response.data;
+  }
+
+  async createStaffAttendance(attendanceData: any): Promise<any> {
+    const response = await apiClient.post('/staff-attendance/', attendanceData);
+    return response.data;
+  }
+
+  async updateStaffAttendance(attendanceId: number, attendanceData: any): Promise<any> {
+    const response = await apiClient.put(`/staff-attendance/${attendanceId}`, attendanceData);
+    return response.data;
+  }
+
+  async deleteStaffAttendance(attendanceId: number): Promise<void> {
+    await apiClient.delete(`/staff-attendance/${attendanceId}`);
+  }
+
+  async staffClockIn(clockInData: { staff_id: number; method?: string; device_id?: string; location?: string; notes?: string }): Promise<any> {
+    const response = await apiClient.post('/staff-attendance/clock-in', clockInData);
+    return response.data;
+  }
+
+  async staffClockOut(clockOutData: { staff_id: number; method?: string; device_id?: string; location?: string; notes?: string; overtime_hours?: number }): Promise<any> {
+    const response = await apiClient.post('/staff-attendance/clock-out', clockOutData);
+    return response.data;
+  }
+
+  async getStaffAttendanceDashboard(): Promise<any> {
+    const response = await apiClient.get('/staff-attendance/dashboard/overview');
+    return response.data;
+  }
+
+  // Staff Leave Management
+  async getStaffLeave(filters?: { staff_id?: number; status?: string; leave_type?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await apiClient.get(`/staff-attendance/leave?${params.toString()}`);
+    return response.data;
+  }
+
+  async createStaffLeave(leaveData: any): Promise<any> {
+    const response = await apiClient.post('/staff-attendance/leave', leaveData);
+    return response.data;
+  }
+
+  async approveStaffLeave(leaveId: number): Promise<any> {
+    const response = await apiClient.put(`/staff-attendance/leave/${leaveId}/approve`);
+    return response.data;
+  }
+
+  async rejectStaffLeave(leaveId: number, rejectionReason: string): Promise<any> {
+    const response = await apiClient.put(`/staff-attendance/leave/${leaveId}/reject?rejection_reason=${encodeURIComponent(rejectionReason)}`);
+    return response.data;
+  }
+
+  // Staff Schedule Management
+  async getStaffSchedule(filters?: { staff_id?: number; day_of_week?: number }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await apiClient.get(`/staff-attendance/schedule?${params.toString()}`);
+    return response.data;
+  }
+
+  async createStaffSchedule(scheduleData: any): Promise<any> {
+    const response = await apiClient.post('/staff-attendance/schedule', scheduleData);
+    return response.data;
+  }
+
+  async updateStaffSchedule(scheduleId: number, scheduleData: any): Promise<any> {
+    const response = await apiClient.put(`/staff-attendance/schedule/${scheduleId}`, scheduleData);
+    return response.data;
+  }
+
+  async deleteStaffSchedule(scheduleId: number): Promise<void> {
+    await apiClient.delete(`/staff-attendance/schedule/${scheduleId}`);
   }
 
   async createDevice(device: { name: string; device_type: string; device_id: string; location: string; ip_address?: string; port?: number }): Promise<Device> {

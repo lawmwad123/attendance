@@ -11,6 +11,7 @@ interface AppState {
   loading: {
     school: boolean;
     stats: boolean;
+    staffAttendance: boolean;
   };
   error: string | null;
   notifications: Notification[];
@@ -33,6 +34,7 @@ const initialState: AppState = {
   loading: {
     school: false,
     stats: false,
+    staffAttendance: false,
   },
   error: null,
   notifications: [],

@@ -20,7 +20,8 @@ import {
   Trash2,
   Search,
   Filter,
-  MoreVertical
+  MoreVertical,
+  UserCheck
 } from 'lucide-react';
 
 interface Tab {
@@ -42,6 +43,12 @@ const tabs: Tab[] = [
     name: 'Attendance',
     icon: <Clock className="h-5 w-5" />,
     description: 'Attendance marking and timing settings'
+  },
+  {
+    id: 'staff-attendance',
+    name: 'Staff Attendance',
+    icon: <UserCheck className="h-5 w-5" />,
+    description: 'Staff attendance and leave management settings'
   },
   {
     id: 'gate-pass',
@@ -226,7 +233,7 @@ const SettingsPage: React.FC = () => {
       
       {/* Settings Overview */}
       {settings && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <div className="flex items-center">
               <div className="p-2 rounded-lg bg-blue-50 mr-3">
@@ -271,6 +278,20 @@ const SettingsPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-600">Attendance Mode</p>
                 <p className="text-xl font-bold text-gray-900">{settings.attendance.default_attendance_mode}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
+            <div className="flex items-center">
+              <div className="p-2 rounded-lg bg-indigo-50 mr-3">
+                <UserCheck className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Staff Attendance</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {settings.staff_attendance?.staff_attendance_reports_enabled ? 'Enabled' : 'Disabled'}
+                </p>
               </div>
             </div>
           </div>
@@ -322,6 +343,14 @@ const SettingsPage: React.FC = () => {
                 <AttendanceSettingsTab 
                   settings={settings.attendance}
                   attendanceModes={attendanceModes}
+                  onSave={handleSave}
+                  isSaving={isSaving}
+                />
+              )}
+              
+              {activeTab === 'staff-attendance' && settings && (
+                <StaffAttendanceSettingsTab 
+                  settings={settings.staff_attendance || {}}
                   onSave={handleSave}
                   isSaving={isSaving}
                 />
@@ -1300,6 +1329,348 @@ const DevicesSettingsTab: React.FC<{
         )}
       </div>
     </div>
+  );
+};
+
+// Staff Attendance Settings Tab
+const StaffAttendanceSettingsTab: React.FC<{
+  settings: any;
+  onSave: (data: any) => void;
+  isSaving: boolean;
+}> = ({ settings, onSave, isSaving }) => {
+  const [formData, setFormData] = useState({
+    staff_clock_in_start_time: settings.staff_clock_in_start_time || '08:00',
+    staff_clock_in_end_time: settings.staff_clock_in_end_time || '09:00',
+    staff_clock_out_start_time: settings.staff_clock_out_start_time || '16:00',
+    staff_clock_out_end_time: settings.staff_clock_out_end_time || '17:00',
+    staff_late_threshold_minutes: settings.staff_late_threshold_minutes || 15,
+    staff_overtime_threshold_hours: settings.staff_overtime_threshold_hours || 8,
+    staff_auto_mark_absent_hours: settings.staff_auto_mark_absent_hours || 2,
+    staff_attendance_methods: settings.staff_attendance_methods || ['web_portal', 'biometric', 'rfid'],
+    staff_leave_approval_workflow: settings.staff_leave_approval_workflow || 'admin_only',
+    staff_leave_auto_approve_hours: settings.staff_leave_auto_approve_hours || 24,
+    staff_leave_types: settings.staff_leave_types || ['personal_leave', 'sick_leave', 'annual_leave', 'emergency_leave'],
+    staff_work_days: settings.staff_work_days || [1, 2, 3, 4, 5], // Monday to Friday
+    staff_holiday_calendar_enabled: settings.staff_holiday_calendar_enabled || false,
+    staff_attendance_reports_enabled: settings.staff_attendance_reports_enabled || true,
+    staff_attendance_notifications_enabled: settings.staff_attendance_notifications_enabled || true
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ staff_attendance: formData });
+  };
+
+  const workDays = [
+    { value: 1, label: 'Monday' },
+    { value: 2, label: 'Tuesday' },
+    { value: 3, label: 'Wednesday' },
+    { value: 4, label: 'Thursday' },
+    { value: 5, label: 'Friday' },
+    { value: 6, label: 'Saturday' },
+    { value: 0, label: 'Sunday' }
+  ];
+
+  const attendanceMethods = [
+    { value: 'web_portal', label: 'Web Portal' },
+    { value: 'biometric', label: 'Biometric Scanner' },
+    { value: 'rfid', label: 'RFID Card' },
+    { value: 'qr_code', label: 'QR Code' },
+    { value: 'mobile_app', label: 'Mobile App' }
+  ];
+
+  const leaveTypes = [
+    { value: 'personal_leave', label: 'Personal Leave' },
+    { value: 'sick_leave', label: 'Sick Leave' },
+    { value: 'annual_leave', label: 'Annual Leave' },
+    { value: 'emergency_leave', label: 'Emergency Leave' },
+    { value: 'maternity_leave', label: 'Maternity Leave' },
+    { value: 'paternity_leave', label: 'Paternity Leave' },
+    { value: 'study_leave', label: 'Study Leave' }
+  ];
+
+  const approvalWorkflows = [
+    { value: 'admin_only', label: 'Admin Only' },
+    { value: 'admin_and_hr', label: 'Admin + HR' },
+    { value: 'immediate_supervisor', label: 'Immediate Supervisor' },
+    { value: 'auto_approve', label: 'Auto Approve' }
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Staff Attendance Settings</h3>
+        
+        {/* Clock In/Out Times */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Clock In/Out Times</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Clock In Start Time
+              </label>
+              <input
+                type="time"
+                value={formData.staff_clock_in_start_time}
+                onChange={(e) => setFormData({ ...formData, staff_clock_in_start_time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Clock In End Time
+              </label>
+              <input
+                type="time"
+                value={formData.staff_clock_in_end_time}
+                onChange={(e) => setFormData({ ...formData, staff_clock_in_end_time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Clock Out Start Time
+              </label>
+              <input
+                type="time"
+                value={formData.staff_clock_out_start_time}
+                onChange={(e) => setFormData({ ...formData, staff_clock_out_start_time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Clock Out End Time
+              </label>
+              <input
+                type="time"
+                value={formData.staff_clock_out_end_time}
+                onChange={(e) => setFormData({ ...formData, staff_clock_out_end_time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Thresholds */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Thresholds</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Late Threshold (Minutes)
+              </label>
+              <input
+                type="number"
+                value={formData.staff_late_threshold_minutes}
+                onChange={(e) => setFormData({ ...formData, staff_late_threshold_minutes: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="60"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Overtime Threshold (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.staff_overtime_threshold_hours}
+                onChange={(e) => setFormData({ ...formData, staff_overtime_threshold_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="6"
+                max="12"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Auto Mark Absent (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.staff_auto_mark_absent_hours}
+                onChange={(e) => setFormData({ ...formData, staff_auto_mark_absent_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="8"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Attendance Methods */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Attendance Methods</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            {attendanceMethods.map((method) => (
+              <label key={method.value} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.staff_attendance_methods.includes(method.value)}
+                  onChange={(e) => {
+                    const methods = formData.staff_attendance_methods;
+                    if (e.target.checked) {
+                      setFormData({ ...formData, staff_attendance_methods: [...methods, method.value] });
+                    } else {
+                      setFormData({ ...formData, staff_attendance_methods: methods.filter((m: string) => m !== method.value) });
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">{method.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Work Days */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Work Days</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            {workDays.map((day) => (
+              <label key={day.value} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.staff_work_days.includes(day.value)}
+                  onChange={(e) => {
+                    const days = formData.staff_work_days;
+                    if (e.target.checked) {
+                      setFormData({ ...formData, staff_work_days: [...days, day.value] });
+                    } else {
+                      setFormData({ ...formData, staff_work_days: days.filter((d: number) => d !== day.value) });
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">{day.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Leave Management */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Leave Management</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Leave Approval Workflow
+              </label>
+              <select
+                value={formData.staff_leave_approval_workflow}
+                onChange={(e) => setFormData({ ...formData, staff_leave_approval_workflow: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                {approvalWorkflows.map((workflow) => (
+                  <option key={workflow.value} value={workflow.value}>{workflow.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Auto Approve After (Hours)
+              </label>
+              <input
+                type="number"
+                value={formData.staff_leave_auto_approve_hours}
+                onChange={(e) => setFormData({ ...formData, staff_leave_auto_approve_hours: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                min="1"
+                max="72"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Leave Types
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              {leaveTypes.map((type) => (
+                <label key={type.value} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.staff_leave_types.includes(type.value)}
+                    onChange={(e) => {
+                      const types = formData.staff_leave_types;
+                      if (e.target.checked) {
+                        setFormData({ ...formData, staff_leave_types: [...types, type.value] });
+                      } else {
+                        setFormData({ ...formData, staff_leave_types: types.filter((t: string) => t !== type.value) });
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{type.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-800 mb-3">Features</h4>
+          <div className="space-y-4">
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.staff_holiday_calendar_enabled}
+                onChange={(e) => setFormData({ ...formData, staff_holiday_calendar_enabled: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable holiday calendar integration</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.staff_attendance_reports_enabled}
+                onChange={(e) => setFormData({ ...formData, staff_attendance_reports_enabled: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable attendance reports</span>
+            </label>
+            
+            <label className="flex items-center p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={formData.staff_attendance_notifications_enabled}
+                onChange={(e) => setFormData({ ...formData, staff_attendance_notifications_enabled: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Enable attendance notifications</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex justify-end pt-4 border-t border-gray-200">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
+        >
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </>
+          )}
+        </button>
+      </div>
+    </form>
   );
 };
 

@@ -17,7 +17,7 @@ from app.schemas.settings import (
     Subject as SubjectSchema, SubjectCreate, SubjectUpdate,
     Device as DeviceSchema, DeviceCreate, DeviceUpdate,
     GeneralSettings, AttendanceSettings, GatePassSettings,
-    NotificationSettings, BiometricSettings, SettingsSummary
+    NotificationSettings, BiometricSettings, StaffAttendanceSettings, SettingsSummary
 )
 
 router = APIRouter()
@@ -263,48 +263,68 @@ async def get_settings_summary(
     subject_count = await db.scalar(select(func.count(Subject.id)).where(Subject.school_id == current_user.school_id))
     device_count = await db.scalar(select(func.count(Device.id)).where(Device.school_id == current_user.school_id))
     
+    # Convert settings to dict to handle datetime serialization
+    settings_dict = settings.dict()
+    
     return SettingsSummary(
         general=GeneralSettings(
-            school_name=settings.school_name,
-            school_motto=settings.school_motto,
-            school_logo_url=settings.school_logo_url,
-            school_address=settings.school_address,
-            school_phone=settings.school_phone,
-            school_email=settings.school_email,
-            school_website=settings.school_website,
-            timezone=settings.timezone
+            school_name=settings_dict["school_name"],
+            school_motto=settings_dict.get("school_motto"),
+            school_logo_url=settings_dict.get("school_logo_url"),
+            school_address=settings_dict.get("school_address"),
+            school_phone=settings_dict.get("school_phone"),
+            school_email=settings_dict.get("school_email"),
+            school_website=settings_dict.get("school_website"),
+            timezone=settings_dict.get("timezone", "UTC")
         ),
         attendance=AttendanceSettings(
-            default_attendance_mode=settings.default_attendance_mode,
-            morning_attendance_start=settings.morning_attendance_start,
-            morning_attendance_end=settings.morning_attendance_end,
-            afternoon_attendance_start=settings.afternoon_attendance_start,
-            afternoon_attendance_end=settings.afternoon_attendance_end,
-            late_arrival_threshold=settings.late_arrival_threshold,
-            absent_threshold=settings.absent_threshold,
-            auto_logout_time=settings.auto_logout_time
+            default_attendance_mode=settings_dict["default_attendance_mode"],
+            morning_attendance_start=settings_dict.get("morning_attendance_start"),
+            morning_attendance_end=settings_dict.get("morning_attendance_end"),
+            afternoon_attendance_start=settings_dict.get("afternoon_attendance_start"),
+            afternoon_attendance_end=settings_dict.get("afternoon_attendance_end"),
+            late_arrival_threshold=settings_dict.get("late_arrival_threshold"),
+            absent_threshold=settings_dict.get("absent_threshold"),
+            auto_logout_time=settings_dict.get("auto_logout_time")
         ),
         gate_pass=GatePassSettings(
-            gate_pass_approval_workflow=settings.gate_pass_approval_workflow,
-            gate_pass_auto_expiry_hours=settings.gate_pass_auto_expiry_hours,
-            allowed_exit_start_time=settings.allowed_exit_start_time,
-            allowed_exit_end_time=settings.allowed_exit_end_time,
-            emergency_override_roles=settings.emergency_override_roles
+            gate_pass_approval_workflow=settings_dict["gate_pass_approval_workflow"],
+            gate_pass_auto_expiry_hours=settings_dict["gate_pass_auto_expiry_hours"],
+            allowed_exit_start_time=settings_dict.get("allowed_exit_start_time"),
+            allowed_exit_end_time=settings_dict.get("allowed_exit_end_time"),
+            emergency_override_roles=settings_dict.get("emergency_override_roles")
         ),
         notifications=NotificationSettings(
-            notification_channels=settings.notification_channels,
-            parent_notification_on_entry=settings.parent_notification_on_entry,
-            parent_notification_on_exit=settings.parent_notification_on_exit,
-            parent_notification_late_arrival=settings.parent_notification_late_arrival,
-            teacher_notification_absentees=settings.teacher_notification_absentees,
-            security_notification_gate_pass=settings.security_notification_gate_pass
+            notification_channels=settings_dict.get("notification_channels"),
+            parent_notification_on_entry=settings_dict["parent_notification_on_entry"],
+            parent_notification_on_exit=settings_dict["parent_notification_on_exit"],
+            parent_notification_late_arrival=settings_dict["parent_notification_late_arrival"],
+            teacher_notification_absentees=settings_dict["teacher_notification_absentees"],
+            security_notification_gate_pass=settings_dict["security_notification_gate_pass"]
         ),
         biometric=BiometricSettings(
-            biometric_type=settings.biometric_type,
-            biometric_enrollment_fingers=settings.biometric_enrollment_fingers,
-            biometric_retry_attempts=settings.biometric_retry_attempts,
-            rfid_card_format=settings.rfid_card_format,
-            card_reissue_policy=settings.card_reissue_policy
+            biometric_type=settings_dict.get("biometric_type"),
+            biometric_enrollment_fingers=settings_dict["biometric_enrollment_fingers"],
+            biometric_retry_attempts=settings_dict["biometric_retry_attempts"],
+            rfid_card_format=settings_dict.get("rfid_card_format"),
+            card_reissue_policy=settings_dict.get("card_reissue_policy")
+        ),
+        staff_attendance=StaffAttendanceSettings(
+            staff_clock_in_start_time=settings_dict.get("staff_clock_in_start_time", "08:00"),
+            staff_clock_in_end_time=settings_dict.get("staff_clock_in_end_time", "09:00"),
+            staff_clock_out_start_time=settings_dict.get("staff_clock_out_start_time", "16:00"),
+            staff_clock_out_end_time=settings_dict.get("staff_clock_out_end_time", "17:00"),
+            staff_late_threshold_minutes=settings_dict.get("staff_late_threshold_minutes", 15),
+            staff_overtime_threshold_hours=settings_dict.get("staff_overtime_threshold_hours", 8),
+            staff_auto_mark_absent_hours=settings_dict.get("staff_auto_mark_absent_hours", 2),
+            staff_attendance_methods=settings_dict.get("staff_attendance_methods", ["web_portal", "biometric", "rfid"]),
+            staff_leave_approval_workflow=settings_dict.get("staff_leave_approval_workflow", "admin_only"),
+            staff_leave_auto_approve_hours=settings_dict.get("staff_leave_auto_approve_hours", 24),
+            staff_leave_types=settings_dict.get("staff_leave_types", ["personal_leave", "sick_leave", "annual_leave", "emergency_leave"]),
+            staff_work_days=settings_dict.get("staff_work_days", [1, 2, 3, 4, 5]),
+            staff_holiday_calendar_enabled=settings_dict.get("staff_holiday_calendar_enabled", False),
+            staff_attendance_reports_enabled=settings_dict.get("staff_attendance_reports_enabled", True),
+            staff_attendance_notifications_enabled=settings_dict.get("staff_attendance_notifications_enabled", True)
         ),
         total_classes=class_count or 0,
         total_subjects=subject_count or 0,

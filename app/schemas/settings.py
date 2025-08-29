@@ -218,6 +218,23 @@ class SchoolSettingsBase(BaseModel):
     # System Integrations
     api_keys: Optional[Dict[str, str]] = None
     integrations: Optional[Dict[str, str]] = None
+    
+    # Staff Attendance Settings
+    staff_clock_in_start_time: Optional[str] = "08:00"
+    staff_clock_in_end_time: Optional[str] = "09:00"
+    staff_clock_out_start_time: Optional[str] = "16:00"
+    staff_clock_out_end_time: Optional[str] = "17:00"
+    staff_late_threshold_minutes: Optional[int] = 15
+    staff_overtime_threshold_hours: Optional[int] = 8
+    staff_auto_mark_absent_hours: Optional[int] = 2
+    staff_attendance_methods: Optional[List[str]] = ["web_portal", "biometric", "rfid"]
+    staff_leave_approval_workflow: Optional[str] = "admin_only"
+    staff_leave_auto_approve_hours: Optional[int] = 24
+    staff_leave_types: Optional[List[str]] = ["personal_leave", "sick_leave", "annual_leave", "emergency_leave"]
+    staff_work_days: Optional[List[int]] = [1, 2, 3, 4, 5]  # Monday to Friday
+    staff_holiday_calendar_enabled: Optional[bool] = False
+    staff_attendance_reports_enabled: Optional[bool] = True
+    staff_attendance_notifications_enabled: Optional[bool] = True
 
 
 class SchoolSettingsCreate(SchoolSettingsBase):
@@ -302,6 +319,23 @@ class SchoolSettingsUpdate(BaseModel):
     # System Integrations
     api_keys: Optional[Dict[str, str]] = None
     integrations: Optional[Dict[str, str]] = None
+    
+    # Staff Attendance Settings
+    staff_clock_in_start_time: Optional[str] = None
+    staff_clock_in_end_time: Optional[str] = None
+    staff_clock_out_start_time: Optional[str] = None
+    staff_clock_out_end_time: Optional[str] = None
+    staff_late_threshold_minutes: Optional[int] = None
+    staff_overtime_threshold_hours: Optional[int] = None
+    staff_auto_mark_absent_hours: Optional[int] = None
+    staff_attendance_methods: Optional[List[str]] = None
+    staff_leave_approval_workflow: Optional[str] = None
+    staff_leave_auto_approve_hours: Optional[int] = None
+    staff_leave_types: Optional[List[str]] = None
+    staff_work_days: Optional[List[int]] = None
+    staff_holiday_calendar_enabled: Optional[bool] = None
+    staff_attendance_reports_enabled: Optional[bool] = None
+    staff_attendance_notifications_enabled: Optional[bool] = None
 
 
 class SchoolSettings(SchoolSettingsBase):
@@ -362,10 +396,29 @@ class BiometricSettings(BaseModel):
     card_reissue_policy: Optional[str] = None
 
 
+class StaffAttendanceSettings(BaseModel):
+    staff_clock_in_start_time: Optional[str] = "08:00"
+    staff_clock_in_end_time: Optional[str] = "09:00"
+    staff_clock_out_start_time: Optional[str] = "16:00"
+    staff_clock_out_end_time: Optional[str] = "17:00"
+    staff_late_threshold_minutes: Optional[int] = 15
+    staff_overtime_threshold_hours: Optional[int] = 8
+    staff_auto_mark_absent_hours: Optional[int] = 2
+    staff_attendance_methods: Optional[List[str]] = ["web_portal", "biometric", "rfid"]
+    staff_leave_approval_workflow: Optional[str] = "admin_only"
+    staff_leave_auto_approve_hours: Optional[int] = 24
+    staff_leave_types: Optional[List[str]] = ["personal_leave", "sick_leave", "annual_leave", "emergency_leave"]
+    staff_work_days: Optional[List[int]] = [1, 2, 3, 4, 5]  # Monday to Friday
+    staff_holiday_calendar_enabled: Optional[bool] = False
+    staff_attendance_reports_enabled: Optional[bool] = True
+    staff_attendance_notifications_enabled: Optional[bool] = True
+
+
 # Settings summary for dashboard
 class SettingsSummary(BaseModel):
     general: GeneralSettings
     attendance: AttendanceSettings
+    staff_attendance: StaffAttendanceSettings
     gate_pass: GatePassSettings
     notifications: NotificationSettings
     biometric: BiometricSettings

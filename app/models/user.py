@@ -66,6 +66,11 @@ class User(TenantBaseModel):
     # Teacher-specific relationships
     classes_taught = relationship("Class", back_populates="teacher")
     
+    # Staff attendance relationships
+    staff_attendance = relationship("StaffAttendance", back_populates="staff", foreign_keys="StaffAttendance.staff_id")
+    leave_requests = relationship("StaffLeave", back_populates="staff", foreign_keys="StaffLeave.staff_id")
+    work_schedule = relationship("StaffSchedule", back_populates="staff", foreign_keys="StaffSchedule.staff_id")
+    
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"

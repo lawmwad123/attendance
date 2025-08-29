@@ -27,6 +27,8 @@ import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import StudentsPage from './pages/StudentsPage';
 import AttendancePage from './pages/AttendancePage';
+import StaffAttendancePage from './pages/StaffAttendancePage';
+import StaffAttendanceReportPage from './pages/StaffAttendanceReportPage';
 import GatePassPage from './pages/GatePassPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -171,6 +173,22 @@ const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <AttendancePage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/staff-attendance" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <StaffAttendancePage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/staff-attendance/reports" element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <StaffAttendanceReportPage />
             </DashboardLayout>
           </ProtectedRoute>
         } />

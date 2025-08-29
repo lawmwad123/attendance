@@ -10,6 +10,7 @@ import {
   Users,
   GraduationCap,
   CheckSquare,
+  Clock,
   Shield,
   BarChart3,
   Settings,
@@ -62,9 +63,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       current: false,
     },
     {
-      name: 'Attendance',
+      name: 'Student Attendance',
       href: '/attendance',
       icon: CheckSquare,
+      current: false,
+    },
+    {
+      name: 'Staff Attendance',
+      href: '/staff-attendance',
+      icon: Clock,
       current: false,
     },
     {
