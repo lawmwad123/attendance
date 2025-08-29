@@ -24,6 +24,7 @@ import {
   UserCheck,
   UserPlus
 } from 'lucide-react';
+import PermissionsManager from '../components/PermissionsManager';
 
 interface Tab {
   id: string;
@@ -92,6 +93,12 @@ const tabs: Tab[] = [
     name: 'Devices',
     icon: <Monitor className="h-5 w-5" />,
     description: 'Biometric devices and RFID readers'
+  },
+  {
+    id: 'permissions',
+    name: 'Permissions',
+    icon: <Shield className="h-5 w-5" />,
+    description: 'RBAC + ABAC permissions management'
   }
 ];
 
@@ -421,6 +428,10 @@ const SettingsPage: React.FC = () => {
                   devices={devices}
                   isLoading={devicesLoading}
                 />
+              )}
+              
+              {activeTab === 'permissions' && (
+                <PermissionsManager />
               )}
             </div>
           )}

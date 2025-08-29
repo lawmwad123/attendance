@@ -12,7 +12,7 @@ from datetime import datetime
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_async_session
+from app.core.database import async_session_factory
 from app.models.settings import SchoolSettings
 from app.models.user import User
 from app.models.school import School
@@ -23,17 +23,17 @@ async def test_visitor_settings():
     print("🧪 Testing Visitor Management Settings Persistence")
     print("=" * 60)
     
-    async for db in get_async_session():
+    async with async_session_factory() as db:
         try:
             # Get the first school and user
-            school_result = await db.execute(select(School))
+            school_result = await db.execute(select(School).limit(1))
             school = school_result.scalar_one_or_none()
             
             if not school:
                 print("❌ No school found in database")
                 return
             
-            user_result = await db.execute(select(User).where(User.school_id == school.id))
+            user_result = await db.execute(select(User).where(User.school_id == school.id).limit(1))
             user = user_result.scalar_one_or_none()
             
             if not user:
@@ -121,8 +121,6 @@ async def test_visitor_settings():
         except Exception as e:
             print(f"❌ Error testing visitor settings: {e}")
             await db.rollback()
-        finally:
-            break
 
 if __name__ == "__main__":
     asyncio.run(test_visitor_settings())

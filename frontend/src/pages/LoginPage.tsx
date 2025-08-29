@@ -21,9 +21,16 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated based on role
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    const user = useAppSelector((state) => state.auth.user);
+    if (user?.role === 'SECURITY') {
+      return <Navigate to="/security/dashboard" replace />;
+    } else if (user?.role === 'ADMIN') {
+      return <Navigate to="/admin" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   const validateForm = () => {

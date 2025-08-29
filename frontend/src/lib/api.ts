@@ -878,6 +878,78 @@ class ApiClient {
     return response.data;
   }
 
+  // Permissions API Methods
+  async getPermissionsPolicies(): Promise<any> {
+    const response = await apiClient.get<any>('/permissions/policies');
+    return response.data;
+  }
+
+  async addPolicy(policyData: any): Promise<any> {
+    const response = await apiClient.post<any>('/permissions/policies', policyData);
+    return response.data;
+  }
+
+  async removePolicy(policyData: any): Promise<any> {
+    const response = await apiClient.delete<any>('/permissions/policies', { data: policyData });
+    return response.data;
+  }
+
+  async getAvailableResources(): Promise<any> {
+    const response = await apiClient.get<any>('/permissions/available-resources');
+    return response.data;
+  }
+
+  async getAvailableActions(): Promise<any> {
+    const response = await apiClient.get<any>('/permissions/available-actions');
+    return response.data;
+  }
+
+  async getRoleHierarchy(): Promise<any> {
+    const response = await apiClient.get<any>('/permissions/role-hierarchy');
+    return response.data;
+  }
+
+  async testPermission(testData: any): Promise<any> {
+    const response = await apiClient.post<any>('/permissions/test-permission', testData);
+    return response.data;
+  }
+
+  // Security API Methods
+  async getSecurityDashboard(): Promise<any> {
+    const response = await apiClient.get<any>('/security/dashboard');
+    return response.data;
+  }
+
+  async searchPeopleForSecurity(params: { query: string; type?: string }): Promise<any> {
+    const response = await apiClient.get<any>('/security/search', { params });
+    return response.data;
+  }
+
+  async markSecurityAttendance(data: any): Promise<any> {
+    const response = await apiClient.post<any>('/security/attendance/mark', data);
+    return response.data;
+  }
+
+  async getRecentCheckins(params: { limit?: number } = {}): Promise<any> {
+    const response = await apiClient.get<any>('/security/recent-checkins', { params });
+    return response.data;
+  }
+
+  async registerSecurityVisitor(data: any): Promise<any> {
+    const response = await apiClient.post<any>('/security/visitors/register', data);
+    return response.data;
+  }
+
+  async checkOutSecurityVisitor(visitorId: number, data: any): Promise<any> {
+    const response = await apiClient.post<any>(`/security/visitors/${visitorId}/checkout`, data);
+    return response.data;
+  }
+
+  async getSecurityVisitors(params: { search?: string; status?: string } = {}): Promise<any> {
+    const response = await apiClient.get<any>('/security/visitors', { params });
+    return response.data;
+  }
+
   // Generic API method for custom requests
   async request<T>(config: AxiosRequestConfig): Promise<T> {
     const response = await apiClient.request<T>(config);

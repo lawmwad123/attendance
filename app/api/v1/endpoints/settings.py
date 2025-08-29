@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List, Optional
 
-from app.api.deps import get_db, get_current_active_user, require_admin
+from app.api.deps import get_db, get_current_active_user, require_admin, require_page_permission, check_settings_aware_permission
 from app.models.user import User
 from app.models.settings import (
     SchoolSettings, ClassLevel, Class, Subject, Device,
@@ -31,7 +31,7 @@ router = APIRouter()
 @router.get("/", response_model=SchoolSettingsSchema)
 async def get_school_settings(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_page_permission("settings", "read"))
 ):
     """Get current school settings."""
     stmt = select(SchoolSettings).where(SchoolSettings.school_id == current_user.school_id)
@@ -52,7 +52,7 @@ async def get_school_settings(
 async def create_school_settings(
     settings_data: SchoolSettingsCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_page_permission("settings", "write"))
 ):
     """Create school settings (admin only)."""
     # Check if settings already exist
@@ -84,7 +84,7 @@ async def create_school_settings(
 async def update_school_settings(
     settings_data: SchoolSettingsUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_page_permission("settings", "write"))
 ):
     """Update school settings (admin only)."""
     stmt = select(SchoolSettings).where(SchoolSettings.school_id == current_user.school_id)

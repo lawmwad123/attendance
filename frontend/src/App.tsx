@@ -14,6 +14,10 @@ import { initializeAdminAuth } from './store/slices/adminSlice';
 import PublicLayout from './components/layouts/PublicLayout';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import AdminLayout from './components/layouts/AdminLayout';
+import SecurityLayout from './components/layouts/SecurityLayout';
+
+// Guards
+import RoleGuard from './components/guards/RoleGuard';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -39,6 +43,11 @@ import NotFoundPage from './pages/NotFoundPage';
 // Admin Pages
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+
+// Security Pages
+import SecurityDashboardPage from './pages/security/SecurityDashboardPage';
+import CheckInOutPage from './pages/security/CheckInOutPage';
+import SecurityVisitorsPage from './pages/security/VisitorsPage';
 
 // Protected Route component
 interface ProtectedRouteProps {
@@ -107,6 +116,15 @@ const AppRoutes: React.FC = () => {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         
+        {/* Default redirect based on role */}
+        <Route path="/default" element={
+          <RoleGuard allowedRoles={['admin', 'teacher', 'parent', 'security']}>
+            <ProtectedRoute>
+              <Navigate to="/dashboard" replace />
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+        
         <Route path="/login" element={
           <PublicLayout>
             <LoginPage />
@@ -138,100 +156,155 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/login" element={<AdminLoginPage />} />
         
         <Route path="/admin" element={
-          <AdminProtectedRoute>
-            <AdminLayout>
-              <AdminDashboardPage />
-            </AdminLayout>
-          </AdminProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'SYSTEM_ADMIN', 'SYSTEM_DEVELOPER']}>
+            <AdminProtectedRoute>
+              <AdminLayout>
+                <AdminDashboardPage />
+              </AdminLayout>
+            </AdminProtectedRoute>
+          </RoleGuard>
         } />
 
-        {/* Protected routes */}
+        {/* Protected routes - Admin/Teacher/Parent only */}
         <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <DashboardPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER', 'PARENT']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <DashboardPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/users" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <UsersPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <UsersPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/students" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <StudentsPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <StudentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/attendance" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <AttendancePage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/staff-attendance" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <StaffAttendancePage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <StaffAttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/staff-attendance/reports" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <StaffAttendanceReportPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <StaffAttendanceReportPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/gate-pass" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <GatePassPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER', 'PARENT']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <GatePassPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/visitors" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <VisitorsPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <VisitorsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/analytics" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <AnalyticsPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AnalyticsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/settings" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <SettingsPage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <SettingsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         <Route path="/profile" element={
-          <ProtectedRoute>
-            <DashboardLayout>
-              <ProfilePage />
-            </DashboardLayout>
-          </ProtectedRoute>
+          <RoleGuard allowedRoles={['ADMIN', 'TEACHER', 'PARENT', 'SECURITY']}>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        {/* Security routes - Security role only */}
+        <Route path="/security/dashboard" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <SecurityDashboardPage />
+              </SecurityLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        <Route path="/security/check-in-out" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <CheckInOutPage />
+              </SecurityLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        <Route path="/security/visitors" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <SecurityVisitorsPage />
+              </SecurityLayout>
+            </ProtectedRoute>
+          </RoleGuard>
         } />
 
         {/* 404 page */}
