@@ -24,6 +24,7 @@ email-validator==2.2.0
 # File Upload and Image Processing
 Pillow==10.1.0
 aiofiles==23.2.1
+qrcode[pil]
 
 # Background Tasks and Caching
 celery==5.3.4

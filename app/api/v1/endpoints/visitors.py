@@ -111,6 +111,11 @@ async def get_visitors(
         if visitor.exit_guard:
             visitor_dict["exit_guard_name"] = visitor.exit_guard.full_name
         
+        # Add computed properties
+        visitor_dict["full_name"] = visitor.full_name
+        visitor_dict["is_overdue"] = visitor.is_overdue
+        visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
+        
         visitor_responses.append(VisitorResponse(**visitor_dict))
     
     return visitor_responses
@@ -228,6 +233,11 @@ async def get_visitor(
         visitor_dict["entry_guard_name"] = visitor.entry_guard.full_name
     if visitor.exit_guard:
         visitor_dict["exit_guard_name"] = visitor.exit_guard.full_name
+    
+    # Add computed properties
+    visitor_dict["full_name"] = visitor.full_name
+    visitor_dict["is_overdue"] = visitor.is_overdue
+    visitor_dict["visit_duration_minutes"] = visitor.visit_duration_minutes
     
     return VisitorResponse(**visitor_dict)
 

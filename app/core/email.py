@@ -151,7 +151,184 @@ class EmailService:
         """
         
         return self.send_email(to_email, subject, html_content, text_content)
+    
+    def send_visitor_notification_email(self, to_email: str, visitor_name: str, host_name: str, 
+                                      visit_purpose: str, entry_time: str, school_name: str = "School"):
+        """Send visitor notification email to host."""
+        subject = f"Visitor Arrival Notification - {school_name}"
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Visitor Arrival</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .info-box {{ background-color: #dbeafe; border: 1px solid #3b82f6; padding: 15px; border-radius: 6px; margin: 20px 0; }}
+                .footer {{ text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Visitor Arrival Notification</h1>
+                    <p>{school_name}</p>
+                </div>
+                <div class="content">
+                    <p>Hello {host_name},</p>
+                    
+                    <p>A visitor has arrived and is waiting for you at the reception.</p>
+                    
+                    <div class="info-box">
+                        <h3>Visitor Details:</h3>
+                        <p><strong>Name:</strong> {visitor_name}</p>
+                        <p><strong>Purpose:</strong> {visit_purpose}</p>
+                        <p><strong>Arrival Time:</strong> {entry_time}</p>
+                    </div>
+                    
+                    <p>Please proceed to the reception area to meet your visitor.</p>
+                    
+                    <p>If you are not available, please contact the reception desk to reschedule the visit.</p>
+                    
+                    <p>Best regards,<br>
+                    {school_name} Security Team</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated notification. Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Visitor Arrival Notification - {school_name}
+        
+        Hello {host_name},
+        
+        A visitor has arrived and is waiting for you at the reception.
+        
+        Visitor Details:
+        - Name: {visitor_name}
+        - Purpose: {visit_purpose}
+        - Arrival Time: {entry_time}
+        
+        Please proceed to the reception area to meet your visitor.
+        
+        If you are not available, please contact the reception desk to reschedule the visit.
+        
+        Best regards,
+        {school_name} Security Team
+        
+        This is an automated notification. Please do not reply to this email.
+        """
+        
+        return self.send_email(to_email, subject, html_content, text_content)
+    
+    def send_visitor_qr_code_email(self, to_email: str, visitor_name: str, qr_code: str, 
+                                 visit_date: str, visit_time: str, school_name: str = "School"):
+        """Send QR code email to pre-registered visitor."""
+        subject = f"Your Visit QR Code - {school_name}"
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Visit QR Code</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #4f46e5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .qr-box {{ background-color: #ffffff; border: 2px solid #e5e7eb; padding: 20px; border-radius: 6px; margin: 20px 0; text-align: center; }}
+                .qr-code {{ font-family: monospace; font-size: 18px; background-color: #f3f4f6; padding: 10px; border-radius: 4px; }}
+                .footer {{ text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Your Visit QR Code</h1>
+                    <p>{school_name}</p>
+                </div>
+                <div class="content">
+                    <p>Hello {visitor_name},</p>
+                    
+                    <p>Your visit to {school_name} has been pre-registered for {visit_date} at {visit_time}.</p>
+                    
+                    <p>Please present this QR code at the reception desk when you arrive:</p>
+                    
+                    <div class="qr-box">
+                        <div class="qr-code">{qr_code}</div>
+                        <p style="margin-top: 10px; font-size: 14px; color: #6b7280;">
+                            Show this code to the security guard for quick check-in
+                        </p>
+                    </div>
+                    
+                    <p><strong>Important:</strong></p>
+                    <ul>
+                        <li>Please arrive 5 minutes before your scheduled time</li>
+                        <li>Bring a valid photo ID for verification</li>
+                        <li>This QR code is valid only for your scheduled visit</li>
+                    </ul>
+                    
+                    <p>If you need to reschedule or cancel your visit, please contact the school office.</p>
+                    
+                    <p>Best regards,<br>
+                    {school_name} Team</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Your Visit QR Code - {school_name}
+        
+        Hello {visitor_name},
+        
+        Your visit to {school_name} has been pre-registered for {visit_date} at {visit_time}.
+        
+        Please present this QR code at the reception desk when you arrive:
+        
+        {qr_code}
+        
+        Important:
+        - Please arrive 5 minutes before your scheduled time
+        - Bring a valid photo ID for verification
+        - This QR code is valid only for your scheduled visit
+        
+        If you need to reschedule or cancel your visit, please contact the school office.
+        
+        Best regards,
+        {school_name} Team
+        
+        This is an automated message. Please do not reply to this email.
+        """
+        
+        return self.send_email(to_email, subject, html_content, text_content)
 
 
 # Create singleton instance
 email_service = EmailService()
+
+# Standalone functions for backward compatibility
+def send_visitor_notification_email(to_email: str, visitor_name: str, host_name: str, 
+                                  visit_purpose: str, entry_time: str, school_name: str = "School"):
+    """Send visitor notification email to host."""
+    return email_service.send_visitor_notification_email(to_email, visitor_name, host_name, 
+                                                        visit_purpose, entry_time, school_name)
+
+def send_visitor_qr_code_email(to_email: str, visitor_name: str, qr_code: str, 
+                             visit_date: str, visit_time: str, school_name: str = "School"):
+    """Send QR code email to pre-registered visitor."""
+    return email_service.send_visitor_qr_code_email(to_email, visitor_name, qr_code, 
+                                                   visit_date, visit_time, school_name)
