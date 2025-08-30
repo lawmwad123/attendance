@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from datetime import datetime, timedelta
@@ -159,7 +159,9 @@ async def search_people(
                 or_(
                     Student.first_name.ilike(search_term),
                     Student.last_name.ilike(search_term),
-                    Student.id_number.ilike(search_term),
+                    Student.student_id.ilike(search_term),
+                    Student.roll_number.ilike(search_term) if Student.roll_number else False,
+                    Student.rfid_card_id.ilike(search_term) if Student.rfid_card_id else False,
                     func.concat(Student.first_name, ' ', Student.last_name).ilike(search_term)
                 )
             )
@@ -174,8 +176,8 @@ async def search_people(
                 first_name=student.first_name,
                 last_name=student.last_name,
                 type="student",
-                id_number=student.id_number,
-                class_name=student.class_name if hasattr(student, 'class_name') else None
+                id_number=student.student_id,
+                class_name=None
             ))
     
     # Search staff
@@ -188,7 +190,9 @@ async def search_people(
                 or_(
                     User.first_name.ilike(search_term),
                     User.last_name.ilike(search_term),
+                    User.email.ilike(search_term),
                     User.employee_id.ilike(search_term) if User.employee_id else False,
+                    User.department.ilike(search_term) if User.department else False,
                     func.concat(User.first_name, ' ', User.last_name).ilike(search_term)
                 )
             )
@@ -208,6 +212,131 @@ async def search_people(
             ))
     
     return results[:10]  # Limit total results
+
+
+@router.get("/verify/{person_type}/{person_id}", response_model=PersonSearchResponse)
+async def verify_person(
+    person_type: str = Path(..., pattern="^(student|staff)$"),
+    person_id: int = Path(...),
+    current_user: User = Depends(require_security_with_gate_pass_settings()),
+    db: AsyncSession = Depends(get_db)
+):
+    """Verify a person by ID (useful for RFID card scanning)."""
+    
+    if person_type == "student":
+        person_stmt = select(Student).where(
+            and_(
+                Student.id == person_id,
+                Student.school_id == current_user.school_id,
+                Student.is_active == True
+            )
+        )
+        person_result = await db.execute(person_stmt)
+        person = person_result.scalar_one_or_none()
+        
+        if not person:
+            raise HTTPException(status_code=404, detail="Student not found")
+        
+        # Get class name if available
+        class_name = None
+        if person.class_id:
+            class_stmt = select(Class).where(Class.id == person.class_id)
+            class_result = await db.execute(class_stmt)
+            class_obj = class_result.scalar_one_or_none()
+            if class_obj:
+                class_name = f"{class_obj.name} {class_obj.section}"
+        
+        return PersonSearchResponse(
+            id=person.id,
+            first_name=person.first_name,
+            last_name=person.last_name,
+            type="student",
+            id_number=person.student_id,
+            class_name=class_name
+        )
+    
+    elif person_type == "staff":
+        person_stmt = select(User).where(
+            and_(
+                User.id == person_id,
+                User.school_id == current_user.school_id,
+                User.is_active == True,
+                User.role.in_([UserRole.ADMIN, UserRole.TEACHER, UserRole.SECURITY])
+            )
+        )
+        person_result = await db.execute(person_stmt)
+        person = person_result.scalar_one_or_none()
+        
+        if not person:
+            raise HTTPException(status_code=404, detail="Staff member not found")
+        
+        return PersonSearchResponse(
+            id=person.id,
+            first_name=person.first_name,
+            last_name=person.last_name,
+            type="staff",
+            employee_id=person.employee_id,
+            class_name=None
+        )
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid person type")
+
+
+@router.get("/verify/rfid/{rfid_card_id}", response_model=PersonSearchResponse)
+async def verify_by_rfid(
+    rfid_card_id: str = Path(...),
+    current_user: User = Depends(require_security_with_gate_pass_settings()),
+    db: AsyncSession = Depends(get_db)
+):
+    """Verify a person by RFID card ID."""
+    
+    # First try to find a student with this RFID card
+    student_stmt = select(Student).where(
+        and_(
+            Student.rfid_card_id == rfid_card_id,
+            Student.school_id == current_user.school_id,
+            Student.is_active == True
+        )
+    )
+    student_result = await db.execute(student_stmt)
+    student = student_result.scalar_one_or_none()
+    
+    if student:
+        return PersonSearchResponse(
+            id=student.id,
+            first_name=student.first_name,
+            last_name=student.last_name,
+            type="student",
+            id_number=student.student_id,
+            class_name=None
+        )
+    
+    # If not found as student, try to find as staff (if staff have RFID cards)
+    # Note: This assumes staff might have RFID cards in the future
+    staff_stmt = select(User).where(
+        and_(
+            User.school_id == current_user.school_id,
+            User.is_active == True,
+            User.role.in_([UserRole.ADMIN, UserRole.TEACHER, UserRole.SECURITY])
+            # Add RFID field when available: User.rfid_card_id == rfid_card_id
+        )
+    )
+    staff_result = await db.execute(staff_stmt)
+    staff = staff_result.scalar_one_or_none()
+    
+    if staff:
+        return PersonSearchResponse(
+            id=staff.id,
+            first_name=staff.first_name,
+            last_name=staff.last_name,
+            type="staff",
+            employee_id=staff.employee_id,
+            class_name=None
+        )
+    
+    raise HTTPException(status_code=404, detail="Person with this RFID card not found")
+
 
 @router.post("/attendance/mark")
 async def mark_attendance(

@@ -20,19 +20,15 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
     return <Navigate to={fallbackPath} replace />;
   }
 
-      // If user has no role or role is not in allowed roles, redirect
-    if (!user?.role || !allowedRoles.includes(user.role)) {
-      // Redirect security users to security dashboard
-      if (user?.role === 'SECURITY') {
-        return <Navigate to="/security/dashboard" replace />;
-      }
-      // Redirect admin users to admin dashboard
-      if (user?.role === 'ADMIN') {
-        return <Navigate to="/admin" replace />;
-      }
-      // Default fallback
-      return <Navigate to={fallbackPath} replace />;
+  // If user has no role or role is not in allowed roles, redirect
+  if (!user?.role || !allowedRoles.includes(user.role)) {
+    // Redirect security users to security dashboard
+    if (user?.role === 'SECURITY') {
+      return <Navigate to="/security/dashboard" replace />;
     }
+    // Default fallback
+    return <Navigate to={fallbackPath} replace />;
+  }
 
   return <>{children}</>;
 };

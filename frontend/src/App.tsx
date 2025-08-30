@@ -18,6 +18,7 @@ import SecurityLayout from './components/layouts/SecurityLayout';
 
 // Guards
 import RoleGuard from './components/guards/RoleGuard';
+import AdminRoleGuard from './components/guards/AdminRoleGuard';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -92,17 +93,18 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Initialize auth state from localStorage
-    dispatch(initializeAuth());
-
-    // Initialize admin auth state from localStorage
-    dispatch(initializeAdminAuth());
-
-    // Set tenant ID from URL or localStorage
+    // Set tenant ID from URL or localStorage first
     const tenantId = getTenantId();
     if (tenantId) {
       dispatch(setTenantId(tenantId));
     }
+
+    // Initialize auth state from localStorage
+    dispatch(initializeAuth());
+
+    // Initialize admin auth state from localStorage (only if needed)
+    // This will only make API calls if admin tokens exist
+    dispatch(initializeAdminAuth());
   }, []); // Empty dependency array to run only once
 
   return <>{children}</>;
@@ -156,13 +158,13 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/login" element={<AdminLoginPage />} />
         
         <Route path="/admin" element={
-          <RoleGuard allowedRoles={['ADMIN', 'SYSTEM_ADMIN', 'SYSTEM_DEVELOPER']}>
+          <AdminRoleGuard allowedRoles={['SYSTEM_ADMIN', 'SYSTEM_DEVELOPER']}>
             <AdminProtectedRoute>
               <AdminLayout>
                 <AdminDashboardPage />
               </AdminLayout>
             </AdminProtectedRoute>
-          </RoleGuard>
+          </AdminRoleGuard>
         } />
 
         {/* Protected routes - Admin/Teacher/Parent only */}
@@ -272,6 +274,39 @@ const AppRoutes: React.FC = () => {
               <DashboardLayout>
                 <ProfilePage />
               </DashboardLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        <Route path="/security/profile" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <ProfilePage />
+              </SecurityLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        <Route path="/security/settings" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <SettingsPage />
+              </SecurityLayout>
+            </ProtectedRoute>
+          </RoleGuard>
+        } />
+
+        <Route path="/security/reports" element={
+          <RoleGuard allowedRoles={['SECURITY']}>
+            <ProtectedRoute>
+              <SecurityLayout>
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-4">Security Reports</h1>
+                  <p className="text-gray-600">Security reports and analytics will be available here.</p>
+                </div>
+              </SecurityLayout>
             </ProtectedRoute>
           </RoleGuard>
         } />

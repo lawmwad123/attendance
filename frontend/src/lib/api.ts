@@ -257,10 +257,16 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth token and redirect to login
+      // Clear auth token
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Only redirect to login if we're on a protected route
+      const currentPath = window.location.pathname;
+      const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/about', '/contact'];
+      if (!publicRoutes.includes(currentPath) && !currentPath.startsWith('/admin')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -922,6 +928,16 @@ class ApiClient {
 
   async searchPeopleForSecurity(params: { query: string; type?: string }): Promise<any> {
     const response = await apiClient.get<any>('/security/search', { params });
+    return response.data;
+  }
+
+  async verifyPersonForSecurity(personType: string, personId: number): Promise<any> {
+    const response = await apiClient.get<any>(`/security/verify/${personType}/${personId}`);
+    return response.data;
+  }
+
+  async verifyByRfidForSecurity(rfidCardId: string): Promise<any> {
+    const response = await apiClient.get<any>(`/security/verify/rfid/${rfidCardId}`);
     return response.data;
   }
 

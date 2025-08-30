@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Shield, 
@@ -15,7 +15,9 @@ import {
   QrCode,
   CreditCard,
   FileText,
-  Settings
+  Settings,
+  ChevronDown,
+  User
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -26,10 +28,35 @@ interface SecurityLayoutProps {
 
 const SecurityLayout: React.FC<SecurityLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+
+  // Close dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target as Node)) {
+        setSettingsDropdownOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSettingsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, []);
 
   const navigation = [
     {
@@ -234,10 +261,79 @@ const SecurityLayout: React.FC<SecurityLayoutProps> = ({ children }) => {
                   <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
                 </button>
                 
-                {/* Settings */}
-                <Link to="/security/settings" className="p-2 text-gray-400 hover:text-gray-500">
-                  <Settings className="h-6 w-6" />
-                </Link>
+                {/* Settings Dropdown */}
+                <div className="relative" ref={settingsDropdownRef}>
+                  <button
+                    onClick={() => setSettingsDropdownOpen(!settingsDropdownOpen)}
+                    className="flex items-center gap-x-2 p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Settings className="h-6 w-6" />
+                    <ChevronDown className={`h-4 w-4 transition-transform ${settingsDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {settingsDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 lg:right-0 sm:right-0 transform transition-all duration-200 ease-in-out">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <User className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{user?.first_name} {user?.last_name}</p>
+                            <p className="text-xs text-gray-500">Security Officer</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <div className="py-1">
+                        <Link
+                          to="/security/settings"
+                          onClick={() => setSettingsDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <Settings className="mr-3 h-4 w-4" />
+                          Settings
+                        </Link>
+                        
+                        <Link
+                          to="/security/profile"
+                          onClick={() => setSettingsDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <User className="mr-3 h-4 w-4" />
+                          Profile
+                        </Link>
+                        
+                        <Link
+                          to="/security/reports"
+                          onClick={() => setSettingsDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <FileText className="mr-3 h-4 w-4" />
+                          Reports
+                        </Link>
+                      </div>
+                      
+                      {/* Divider */}
+                      <div className="border-t border-gray-100 my-1"></div>
+                      
+                      {/* Logout */}
+                      <button
+                        onClick={() => {
+                          setSettingsDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="mr-3 h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

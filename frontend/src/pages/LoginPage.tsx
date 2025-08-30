@@ -26,8 +26,8 @@ const LoginPage: React.FC = () => {
     const user = useAppSelector((state) => state.auth.user);
     if (user?.role === 'SECURITY') {
       return <Navigate to="/security/dashboard" replace />;
-    } else if (user?.role === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
+    } else if (user?.role === 'ADMIN' || user?.role === 'TEACHER' || user?.role === 'PARENT') {
+      return <Navigate to="/dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }

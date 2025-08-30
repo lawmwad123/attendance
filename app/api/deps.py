@@ -8,7 +8,7 @@ from datetime import datetime
 from app.core.database import get_session
 from app.core.security import verify_token
 from app.core.casbin import get_casbin_manager
-from app.middleware.tenant import get_current_school_id
+from app.middleware.tenant import get_current_school_id, get_current_school
 from app.models.user import User, UserRole
 from app.models.school import School
 from app.models.super_admin import SuperAdmin
@@ -131,7 +131,7 @@ def get_tenant_filter(request: Request) -> dict:
     return {"school_id": school_id}
 
 
-async def get_current_school_dep(request: Request) -> School:
+def get_current_school_dep(request: Request) -> School:
     """Get current school as dependency."""
     school = get_current_school(request)
     if not school:

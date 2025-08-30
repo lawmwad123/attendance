@@ -150,10 +150,10 @@ export const initializeAdminAuth = createAsyncThunk(
       const admin = await adminApi.getCurrentAdmin();
       return admin;
     } catch (error: any) {
-      // Clear invalid tokens
+      // Clear invalid tokens silently without throwing error
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      return rejectWithValue('Invalid or expired token');
+      return null; // Return null instead of rejecting
     }
   }
 );

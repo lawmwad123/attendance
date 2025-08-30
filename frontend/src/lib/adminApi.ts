@@ -153,11 +153,13 @@ adminApiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Clear admin token and redirect to admin login
+      // Clear admin token
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/admin/login') {
+      
+      // Only redirect to admin login if we're on an admin route
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin') && currentPath !== '/admin/login') {
         window.location.href = '/admin/login';
       }
     }

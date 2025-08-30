@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = ""
+    POSTGRES_PASSWORD: str = "geniusmind"
     POSTGRES_DB: str = "attendance_db"
     POSTGRES_PORT: str = "5432"
     
