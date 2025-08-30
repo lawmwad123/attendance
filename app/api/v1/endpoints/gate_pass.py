@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime, date
 import uuid
@@ -37,8 +38,13 @@ async def get_gate_passes(
     tenant_filter = get_tenant_filter(request)
     school_id = tenant_filter["school_id"]
     
-    # Build query with student join
-    stmt = select(GatePass, Student).join(Student).where(Student.school_id == school_id)
+    # Build query with student join and eager loading
+    stmt = (
+        select(GatePass, Student)
+        .join(Student)
+        .options(selectinload(GatePass.approved_by))
+        .where(Student.school_id == school_id)
+    )
     
     # Apply filters
     if status and status != "all":
@@ -129,10 +135,15 @@ async def get_gate_pass(
     tenant_filter = get_tenant_filter(request)
     school_id = tenant_filter["school_id"]
     
-    stmt = select(GatePass, Student).join(Student).where(
-        and_(
-            GatePass.id == pass_id,
-            Student.school_id == school_id
+    stmt = (
+        select(GatePass, Student)
+        .join(Student)
+        .options(selectinload(GatePass.approved_by))
+        .where(
+            and_(
+                GatePass.id == pass_id,
+                Student.school_id == school_id
+            )
         )
     )
     result = await db.execute(stmt)
