@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { loginUser } from '../store/slices/authSlice';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   Shield, 
@@ -15,22 +15,34 @@ import {
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading, user } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Redirect if already authenticated based on role
-  if (isAuthenticated) {
-    const user = useAppSelector((state) => state.auth.user);
-    if (user?.role === 'SECURITY') {
-      return <Navigate to="/security/dashboard" replace />;
-    } else if (user?.role === 'ADMIN' || user?.role === 'TEACHER' || user?.role === 'PARENT') {
-      return <Navigate to="/dashboard" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
+  // Handle redirection when user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User already authenticated, redirecting based on role:', user.role);
+      if (user.role === 'SECURITY') {
+        navigate('/security/dashboard', { replace: true });
+      } else if (user.role === 'ADMIN' || user.role === 'TEACHER' || user.role === 'PARENT') {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
+  }, [isAuthenticated, user, navigate]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   const validateForm = () => {
@@ -59,12 +71,28 @@ const LoginPage: React.FC = () => {
       return;
     }
     
+    console.log('Attempting login with:', { email });
+    
     const result = await dispatch(loginUser({ email, password }));
     
+    console.log('Login result:', result);
+    
     if (loginUser.rejected.match(result)) {
+      console.error('Login failed:', result.payload);
       toast.error(result.payload || 'Login failed. Please check your credentials.');
     } else if (loginUser.fulfilled.match(result)) {
+      console.log('Login successful:', result.payload);
       toast.success('Login successful!');
+      
+      // Manual navigation based on user role
+      const userRole = result.payload.user.role;
+      if (userRole === 'SECURITY') {
+        navigate('/security/dashboard', { replace: true });
+      } else if (userRole === 'ADMIN' || userRole === 'TEACHER' || userRole === 'PARENT') {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
   };
 
@@ -119,7 +147,7 @@ const LoginPage: React.FC = () => {
                       ? 'border-red-300 bg-red-50' 
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
-                  placeholder="admin@demo-school.com"
+                  placeholder="teacher@demo-school.com"
                   value={email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                 />
@@ -149,7 +177,7 @@ const LoginPage: React.FC = () => {
                       ? 'border-red-300 bg-red-50' 
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
-                  placeholder="Enter your password"
+                  placeholder="demo123"
                   value={password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                 />

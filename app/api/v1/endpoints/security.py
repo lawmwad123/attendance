@@ -63,40 +63,60 @@ async def get_security_dashboard(
         visitors_today_result = await db.execute(visitors_today_stmt)
         visitors_today = visitors_today_result.scalar() or 0
         
-        # Get recent check-ins (last 10)
-        recent_checkins_stmt = select(Attendance).where(
+        # Get recent student check-ins (last 10)
+        recent_student_checkins_stmt = select(Attendance).where(
             and_(
                 Attendance.school_id == current_user.school_id,
                 func.date(Attendance.marked_at) == today
             )
-        ).order_by(Attendance.marked_at.desc()).limit(10)
+        ).order_by(Attendance.marked_at.desc()).limit(5)
         
-        recent_checkins_result = await db.execute(recent_checkins_stmt)
-        recent_checkins = recent_checkins_result.scalars().all()
+        recent_student_checkins_result = await db.execute(recent_student_checkins_stmt)
+        recent_student_checkins = recent_student_checkins_result.scalars().all()
+        
+        # Get recent staff check-ins (last 10)
+        recent_staff_checkins_stmt = select(StaffAttendance).where(
+            and_(
+                StaffAttendance.school_id == current_user.school_id,
+                func.date(StaffAttendance.marked_at) == today
+            )
+        ).order_by(StaffAttendance.marked_at.desc()).limit(5)
+        
+        recent_staff_checkins_result = await db.execute(recent_staff_checkins_stmt)
+        recent_staff_checkins = recent_staff_checkins_result.scalars().all()
         
         # Format recent check-ins
         formatted_checkins = []
-        for checkin in recent_checkins:
-            person_name = ""
-            if checkin.student_id:
-                student_stmt = select(Student).where(Student.id == checkin.student_id)
-                student_result = await db.execute(student_stmt)
-                student = student_result.scalar_one_or_none()
-                if student:
-                    person_name = f"{student.first_name} {student.last_name}"
-            elif checkin.user_id:
-                user_stmt = select(User).where(User.id == checkin.user_id)
-                user_result = await db.execute(user_stmt)
-                user = user_result.scalar_one_or_none()
-                if user:
-                    person_name = f"{user.first_name} {user.last_name}"
-            
-            formatted_checkins.append({
-                "person_name": person_name,
-                "type": checkin.status,
-                "time": checkin.marked_at.strftime("%H:%M"),
-                "method": checkin.method
-            })
+        
+        # Format student check-ins
+        for checkin in recent_student_checkins:
+            student_stmt = select(Student).where(Student.id == checkin.student_id)
+            student_result = await db.execute(student_stmt)
+            student = student_result.scalar_one_or_none()
+            if student:
+                formatted_checkins.append({
+                    "person_name": f"{student.first_name} {student.last_name}",
+                    "type": checkin.status,
+                    "time": checkin.marked_at.strftime("%H:%M"),
+                    "method": checkin.method
+                })
+        
+        # Format staff check-ins
+        for checkin in recent_staff_checkins:
+            user_stmt = select(User).where(User.id == checkin.staff_id)
+            user_result = await db.execute(user_stmt)
+            user = user_result.scalar_one_or_none()
+            if user:
+                formatted_checkins.append({
+                    "person_name": f"{user.first_name} {user.last_name}",
+                    "type": checkin.status,
+                    "time": checkin.marked_at.strftime("%H:%M"),
+                    "method": checkin.method
+                })
+        
+        # Sort by timestamp
+        formatted_checkins.sort(key=lambda x: x["time"], reverse=True)
+        formatted_checkins = formatted_checkins[:10]
         
         # Get active alerts (placeholder - can be expanded)
         active_alerts = []
@@ -450,7 +470,7 @@ async def get_recent_checkins(
             })
     
     for attendance in staff_attendance:
-        user_stmt = select(User).where(User.id == attendance.user_id)
+        user_stmt = select(User).where(User.id == attendance.staff_id)
         user_result = await db.execute(user_stmt)
         user = user_result.scalar_one_or_none()
         
