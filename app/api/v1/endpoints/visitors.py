@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime, timedelta, date
 import uuid
@@ -53,8 +54,18 @@ async def get_visitors(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get visitors with filtering and search."""
-    # Build query
-    stmt = select(Visitor).where(Visitor.school_id == current_user.school_id)
+    # Build query with eager loading of relationships
+    stmt = (
+        select(Visitor)
+        .options(
+            selectinload(Visitor.host_user),
+            selectinload(Visitor.host_student),
+            selectinload(Visitor.approved_by),
+            selectinload(Visitor.entry_guard),
+            selectinload(Visitor.exit_guard)
+        )
+        .where(Visitor.school_id == current_user.school_id)
+    )
     
     # Apply filters
     if search:
@@ -210,10 +221,20 @@ async def get_visitor(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get a specific visitor."""
-    stmt = select(Visitor).where(
-        and_(
-            Visitor.id == visitor_id,
-            Visitor.school_id == current_user.school_id
+    stmt = (
+        select(Visitor)
+        .options(
+            selectinload(Visitor.host_user),
+            selectinload(Visitor.host_student),
+            selectinload(Visitor.approved_by),
+            selectinload(Visitor.entry_guard),
+            selectinload(Visitor.exit_guard)
+        )
+        .where(
+            and_(
+                Visitor.id == visitor_id,
+                Visitor.school_id == current_user.school_id
+            )
         )
     )
     result = await db.execute(stmt)
